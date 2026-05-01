@@ -1,145 +1,509 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Plus, Search, MapPin, CalendarDays, ClipboardList, CheckCircle2, Clock, AlertTriangle, Settings, Trash2, Users, Wrench } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  Hammer,
+  Home,
+  Layers,
+  MapPin,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  Users,
+  Wrench
+} from "lucide-react";
 import "./style.css";
 
-const initialProjects = [
-  { id: 1, name: "Λύτρα 5", address: "Θεσσαλονίκη", stage: "Ηλεκτρολογικά", crew: "Ηλεκτρολόγος", deliveryDate: "2026-05-20", status: "Σε εξέλιξη", notes: "Ανακαίνιση διαμερίσματος. Εκκρεμεί τελικός έλεγχος παροχών.", technicalSpecs: "Πίνακας, παροχές κουζίνας, πρίζες, φωτισμός, αναμονές A/C." },
-  { id: 2, name: "Μπάνιο - Βούλγαρη", address: "Περιοχή Βούλγαρη", stage: "Πλακίδια", crew: "Πλακάς", deliveryDate: "2026-05-10", status: "Επείγον", notes: "Να επιβεβαιωθεί διαθεσιμότητα υλικών και πρόγραμμα πλακά.", technicalSpecs: "Διαστάσεις πλακιδίων, τύπος αρμόστοκου, κλίσεις ντουζιέρας, θέση μπαταρίας." },
-  { id: 3, name: "Κουζίνα - Τεχνικές προδιαγραφές", address: "Θεσσαλονίκη", stage: "Σχεδιασμός", crew: "Μελέτη", deliveryDate: "2026-06-01", status: "Αναμονή", notes: "Χρειάζεται τελική λίστα παροχών και επαγγελματιών.", technicalSpecs: "Παροχές ηλεκτρικών συσκευών, ύψη πριζών, φωτισμός πάγκου, αναμονές νερού." }
-];
+const STORAGE_KEY = "ergotaxiako_app_v5";
 
 const defaultSettings = {
-  statuses: ["Σε εξέλιξη", "Επείγον", "Αναμονή", "Ολοκληρωμένο"],
-  stages: ["Σχεδιασμός", "Ηλεκτρολογικά", "Υδραυλικά", "Γκρεμίσματα", "Σοβάδες", "Πλακίδια", "Βαψίματα", "Παράδοση"],
-  crews: ["Ηλεκτρολόγος", "Υδραυλικός", "Πλακάς", "Μπογιατζής", "Γυψοσανιδάς", "Μελέτη"]
+  statuses: ["σε εξέλιξη", "επείγον", "αναμονή", "ολοκληρωμένο"],
+  stages: [
+    "αποξηλώσεις",
+    "αποξήλωση μαρμάρων",
+    "αποκομιδή μπάζων",
+    "προσωρινά κουφώματα",
+    "εργοταξιακή λεκάνη",
+    "θέση λέβητα αερίου",
+    "μπούρι απορροφητήρα",
+    "οπές κλιματιστικών",
+    "χτίσιμο",
+    "ξύσιμο τοιχοποιίας",
+    "επιχρίσματα α",
+    "κιγκλιδώματα",
+    "ηλεκτρολόγος",
+    "επιχρίσματα β",
+    "σπατουλάρισμα",
+    "γυψοσανίδες",
+    "καλωδίωση",
+    "υδραυλικός",
+    "απορροή κλιματιστικών",
+    "γκρο μπετά",
+    "επιχρίσματα γ",
+    "πλακάκια δαπέδου",
+    "πλακάκια μπάνιου",
+    "κατωκασιά",
+    "μαρμαροποδιές",
+    "γυψοσανίδες β",
+    "βάψιμο 1ο",
+    "καθαριότητα (α)",
+    "εξ. κουφώματα",
+    "κουζίνα",
+    "ντουλάπες",
+    "εσ. κουφώματα",
+    "είδη υγιεινής",
+    "καμπίνα ντουζιέρας",
+    "θερμαντικά σώματα",
+    "διακόπτες",
+    "φωτιστικά",
+    "τελικό βάψιμο",
+    "ηλεκτρικές συσκευές",
+    "κλιματιστικό",
+    "τέντα",
+    "επίπλωση",
+    "διακόσμηση",
+    "λέβητας αερίου",
+    "φυσικό αέριο",
+    "ολοκλήρωση έργου",
+    "παράδοση έργου"
+  ],
+  crews: ["ηλεκτρολόγος", "υδραυλικός", "πλακάς", "ελαιοχρωματιστής"]
 };
 
-const PROJECTS_KEY_V4 = "ergotaxiako-projects-v4";
-const PROJECTS_KEY_V3 = "ergotaxiako-projects-v3";
-const PROJECTS_KEY_V2 = "ergotaxiako-projects-v2";
-const SETTINGS_KEY = "ergotaxiako-settings-v3";
+const defaultProjects = [
+  {
+    id: 1,
+    name: "Λύτρα 5",
+    address: "Θεσσαλονίκη",
+    stage: "ηλεκτρολογικά",
+    deliveryDate: "2026-05-20",
+    status: "σε εξέλιξη",
+    crew: "ηλεκτρολόγος",
+    notes: "Ανακαίνιση διαμερίσματος. Εκκρεμεί τελικός έλεγχος παροχών.",
+    specs: "Τεχνικές προδιαγραφές έργου: παροχές, θέσεις, ύψη, ειδικές παρατηρήσεις."
+  },
+  {
+    id: 2,
+    name: "Μπάνιο - Βούλγαρη",
+    address: "Περιοχή Βούλγαρη",
+    stage: "πλακάκια μπάνιου",
+    deliveryDate: "2026-05-10",
+    status: "επείγον",
+    crew: "πλακάς",
+    notes: "Να επιβεβαιωθεί διαθεσιμότητα υλικών και πρόγραμμα πλακά.",
+    specs: "Να σημειωθούν οι τελικές επιλογές πλακιδίων, ειδών υγιεινής και καμπίνας."
+  },
+  {
+    id: 3,
+    name: "Κουζίνα - Τεχνικές προδιαγραφές",
+    address: "Θεσσαλονίκη",
+    stage: "κουζίνα",
+    deliveryDate: "2026-06-01",
+    status: "αναμονή",
+    crew: "",
+    notes: "Χρειάζεται τελική λίστα παροχών και επαγγελματιών.",
+    specs: "Παροχές κουζίνας, ύψη πριζών, θέση απορροφητήρα, συσκευές."
+  }
+];
 
-function loadJSON(key, fallback) {
+function loadState() {
   try {
-    const saved = localStorage.getItem(key);
-    if (!saved) return fallback;
-    return JSON.parse(saved) || fallback;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { projects: defaultProjects, settings: defaultSettings };
+    const parsed = JSON.parse(raw);
+    return {
+      projects: parsed.projects?.length ? parsed.projects : defaultProjects,
+      settings: {
+        statuses: parsed.settings?.statuses?.length ? parsed.settings.statuses : defaultSettings.statuses,
+        stages: parsed.settings?.stages?.length ? parsed.settings.stages : defaultSettings.stages,
+        crews: parsed.settings?.crews?.length ? parsed.settings.crews : defaultSettings.crews
+      }
+    };
   } catch {
-    return fallback;
+    return { projects: defaultProjects, settings: defaultSettings };
   }
 }
 
-function normalizeProject(project) {
-  return { crew: "", technicalSpecs: "", ...project };
-}
-
-function loadProjects() {
-  const v4 = loadJSON(PROJECTS_KEY_V4, null);
-  if (Array.isArray(v4) && v4.length) return v4.map(normalizeProject);
-  const v3 = loadJSON(PROJECTS_KEY_V3, null);
-  if (Array.isArray(v3) && v3.length) return v3.map(normalizeProject);
-  const v2 = loadJSON(PROJECTS_KEY_V2, null);
-  if (Array.isArray(v2) && v2.length) return v2.map(normalizeProject);
-  return initialProjects.map(normalizeProject);
-}
-
-function loadSettings() {
-  const saved = loadJSON(SETTINGS_KEY, null);
-  if (!saved) return defaultSettings;
-  return {
-    statuses: Array.isArray(saved.statuses) && saved.statuses.length ? saved.statuses : defaultSettings.statuses,
-    stages: Array.isArray(saved.stages) && saved.stages.length ? saved.stages : defaultSettings.stages,
-    crews: Array.isArray(saved.crews) && saved.crews.length ? saved.crews : defaultSettings.crews
-  };
-}
+const statusClass = {
+  "σε εξέλιξη": "status blue",
+  "επείγον": "status red",
+  "αναμονή": "status yellow",
+  "ολοκληρωμένο": "status green"
+};
 
 function App() {
-  const [activeTab, setActiveTab] = useState("projects");
-  const [projects, setProjects] = useState(loadProjects);
-  const [settings, setSettings] = useState(loadSettings);
+  const initial = loadState();
+  const [projects, setProjects] = useState(initial.projects);
+  const [settings, setSettings] = useState(initial.settings);
+  const [view, setView] = useState({ type: "home" });
   const [query, setQuery] = useState("");
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [form, setForm] = useState(() => ({
-    name: "", address: "", stage: loadSettings().stages[0] || "", crew: loadSettings().crews[0] || "",
-    deliveryDate: "", status: loadSettings().statuses[0] || "Σε εξέλιξη", notes: "", technicalSpecs: ""
-  }));
-
-  useEffect(() => localStorage.setItem(PROJECTS_KEY_V4, JSON.stringify(projects)), [projects]);
-  useEffect(() => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)), [settings]);
 
   useEffect(() => {
-    if (!selectedProject && projects.length > 0) return setSelectedProject(projects[0]);
-    if (selectedProject) {
-      const latest = projects.find((p) => p.id === selectedProject.id);
-      if (latest) setSelectedProject(latest);
-    }
-  }, [projects, selectedProject]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, settings }));
+  }, [projects, settings]);
 
-  const filteredProjects = useMemo(() => projects.filter((p) => `${p.name} ${p.address} ${p.stage} ${p.crew} ${p.status} ${p.technicalSpecs}`.toLowerCase().includes(query.toLowerCase())), [projects, query]);
-  const stats = useMemo(() => ({ total: projects.length, active: projects.filter((p) => p.status === "Σε εξέλιξη").length, urgent: projects.filter((p) => p.status === "Επείγον").length, waiting: projects.filter((p) => p.status === "Αναμονή").length }), [projects]);
+  const selectedProject = projects.find((p) => p.id === view.projectId);
 
-  function addProject() {
-    if (!form.name.trim()) return;
-    const newProject = { ...form, id: Date.now(), deliveryDate: form.deliveryDate || "Δεν ορίστηκε" };
-    setProjects([newProject, ...projects]);
-    setSelectedProject(newProject);
-    setForm({ name: "", address: "", stage: settings.stages[0] || "", crew: settings.crews[0] || "", deliveryDate: "", status: settings.statuses[0] || "Σε εξέλιξη", notes: "", technicalSpecs: "" });
+  function addProject(project) {
+    const next = { ...project, id: Date.now(), specs: project.specs || "" };
+    setProjects((prev) => [next, ...prev]);
+    setView({ type: "project", projectId: next.id, tab: "general" });
+  }
+
+  function updateProject(id, patch) {
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }
 
   function deleteProject(id) {
-    const next = projects.filter((p) => p.id !== id);
-    setProjects(next);
-    if (selectedProject?.id === id) setSelectedProject(next[0] || null);
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setView({ type: "home" });
   }
 
-  return <div className="page"><div className="container">
-    <header><div><p className="eyebrow">Εργοταξιακό App v4</p><h1>Έργα & Τεχνικές Προδιαγραφές</h1><p className="sub">Κάθε έργο έχει πλέον μόνιμο πεδίο τεχνικών προδιαγραφών που μπορείς να ενημερώνεις ανά πάσα στιγμή.</p></div><div className="total"><span>Σύνολο έργων</span><b>{stats.total}</b></div></header>
-    <nav className="tabs"><button className={activeTab === "projects" ? "active" : ""} onClick={() => setActiveTab("projects")}><ClipboardList size={18}/> Έργα</button><button className={activeTab === "admin" ? "active" : ""} onClick={() => setActiveTab("admin")}><Settings size={18}/> Διαχείριση</button></nav>
-    {activeTab === "projects" ? <ProjectsView projects={projects} filteredProjects={filteredProjects} query={query} setQuery={setQuery} selectedProject={selectedProject} setSelectedProject={setSelectedProject} form={form} setForm={setForm} addProject={addProject} deleteProject={deleteProject} setProjects={setProjects} settings={settings} stats={stats}/> : <AdminView settings={settings} setSettings={setSettings}/>} 
-  </div></div>;
-}
-
-function ProjectsView({filteredProjects, query, setQuery, selectedProject, setSelectedProject, form, setForm, addProject, deleteProject, setProjects, settings, stats}) {
-  return <>
-    <section className="stats"><Stat label="Σε εξέλιξη" value={stats.active}/><Stat label="Επείγοντα" value={stats.urgent}/><Stat label="Σε αναμονή" value={stats.waiting}/><Stat label="Όλα τα έργα" value={stats.total}/></section>
-    <main><section className="left"><div className="search"><Search size={18}/><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Αναζήτηση έργου, διεύθυνσης, σταδίου, συνεργείου ή προδιαγραφών..."/></div><div className="grid">{filteredProjects.map((p)=><ProjectCard key={p.id} project={p} selected={selectedProject?.id===p.id} onClick={()=>setSelectedProject(p)} onDelete={()=>deleteProject(p.id)}/>)}</div></section>
-    <aside><div className="card form"><h2><Plus size={20}/> Νέο έργο</h2>
-      <Input label="Όνομα έργου" value={form.name} onChange={(v)=>setForm({...form,name:v})} placeholder="π.χ. Διαμέρισμα Παπάφη"/>
-      <Input label="Διεύθυνση" value={form.address} onChange={(v)=>setForm({...form,address:v})} placeholder="π.χ. Βούλγαρη"/>
-      <Select label="Στάδιο" value={form.stage} options={settings.stages} onChange={(v)=>setForm({...form,stage:v})}/>
-      <Select label="Συνεργείο" value={form.crew} options={settings.crews} onChange={(v)=>setForm({...form,crew:v})}/>
-      <Input label="Ημερομηνία παράδοσης" type="date" value={form.deliveryDate} onChange={(v)=>setForm({...form,deliveryDate:v})}/>
-      <Select label="Κατάσταση" value={form.status} options={settings.statuses} onChange={(v)=>setForm({...form,status:v})}/>
-      <label><span>Σημειώσεις</span><textarea value={form.notes} onChange={(e)=>setForm({...form,notes:e.target.value})} placeholder="Σύντομες παρατηρήσεις για το έργο..."/></label>
-      <label><span>Τεχνικές προδιαγραφές</span><textarea value={form.technicalSpecs} onChange={(e)=>setForm({...form,technicalSpecs:e.target.value})} placeholder="Μόνιμες πληροφορίες που πρέπει να θυμάσαι για όλη τη διάρκεια του έργου..."/></label>
-      <button className="primary" onClick={addProject}>Προσθήκη έργου</button><p className="save-note">✓ Αποθηκεύεται αυτόματα στη συσκευή</p></div>
-    {selectedProject && <div className="card detail"><p>Επιλεγμένο έργο</p><h2>{selectedProject.name}</h2><Info icon={MapPin} text={selectedProject.address || "Δεν έχει δοθεί διεύθυνση"}/><Info icon={ClipboardList} text={`Στάδιο: ${selectedProject.stage || "Δεν έχει οριστεί"}`}/><Info icon={Users} text={`Συνεργείο: ${selectedProject.crew || "Δεν έχει οριστεί"}`}/><Info icon={CalendarDays} text={`Παράδοση: ${selectedProject.deliveryDate}`}/><Badge status={selectedProject.status}/><p className="notes">{selectedProject.notes || "Δεν υπάρχουν σημειώσεις."}</p><TechnicalSpecsEditor project={selectedProject} setProjects={setProjects}/></div>}
-    </aside></main></>;
-}
-
-function TechnicalSpecsEditor({ project, setProjects }) {
-  function updateSpecs(value) {
-    setProjects((current) => current.map((p) => p.id === project.id ? { ...p, technicalSpecs: value } : p));
+  if (view.type === "project" && selectedProject) {
+    return (
+      <ProjectPage
+        project={selectedProject}
+        settings={settings}
+        tab={view.tab || "general"}
+        onBack={() => setView({ type: "home" })}
+        onTab={(tab) => setView({ type: "project", projectId: selectedProject.id, tab })}
+        onUpdate={(patch) => updateProject(selectedProject.id, patch)}
+        onDelete={() => deleteProject(selectedProject.id)}
+      />
+    );
   }
-  return <div className="technical-box"><label><span>Τεχνικές προδιαγραφές</span><textarea value={project.technicalSpecs || ""} onChange={(e)=>updateSpecs(e.target.value)} placeholder="Γράψε εδώ μόνιμες τεχνικές πληροφορίες: παροχές, ύψη, υλικά, ιδιαιτερότητες, αποφάσεις πελάτη, σημεία προσοχής..."/></label><p className="save-note">✓ Αποθηκεύεται αυτόματα και μένει μαζί με το έργο</p></div>;
+
+  if (view.type === "settings") {
+    return (
+      <SettingsPage
+        settings={settings}
+        setSettings={setSettings}
+        onBack={() => setView({ type: "home" })}
+      />
+    );
+  }
+
+  return (
+    <HomePage
+      projects={projects}
+      settings={settings}
+      query={query}
+      setQuery={setQuery}
+      onAdd={addProject}
+      onOpen={(projectId) => setView({ type: "project", projectId, tab: "general" })}
+      onSettings={() => setView({ type: "settings" })}
+    />
+  );
 }
 
-function AdminView({settings, setSettings}) {
-  return <section className="admin-grid">
-    <AdminList title="Καταστάσεις έργου" icon={AlertTriangle} description="Ό,τι εμφανίζεται στο πεδίο Κατάσταση." items={settings.statuses} onAdd={(item)=>setSettings({...settings, statuses:[...settings.statuses, item]})} onDelete={(item)=>setSettings({...settings, statuses:settings.statuses.filter((x)=>x!==item)})}/>
-    <AdminList title="Στάδια εργασιών" icon={Wrench} description="Τα στάδια που επιλέγεις σε κάθε έργο." items={settings.stages} onAdd={(item)=>setSettings({...settings, stages:[...settings.stages, item]})} onDelete={(item)=>setSettings({...settings, stages:settings.stages.filter((x)=>x!==item)})}/>
-    <AdminList title="Συνεργεία" icon={Users} description="Οι ομάδες ή επαγγελματίες που δουλεύουν στα έργα." items={settings.crews} onAdd={(item)=>setSettings({...settings, crews:[...settings.crews, item]})} onDelete={(item)=>setSettings({...settings, crews:settings.crews.filter((x)=>x!==item)})}/>
-  </section>;
+function HomePage({ projects, settings, query, setQuery, onAdd, onOpen, onSettings }) {
+  const [form, setForm] = useState({
+    name: "",
+    address: "",
+    stage: settings.stages[0] || "",
+    deliveryDate: "",
+    status: settings.statuses[0] || "σε εξέλιξη",
+    crew: "",
+    notes: "",
+    specs: ""
+  });
+
+  useEffect(() => {
+    setForm((f) => ({
+      ...f,
+      stage: f.stage || settings.stages[0] || "",
+      status: f.status || settings.statuses[0] || "σε εξέλιξη"
+    }));
+  }, [settings]);
+
+  const filtered = projects.filter((p) =>
+    `${p.name} ${p.address} ${p.stage} ${p.status} ${p.crew}`.toLowerCase().includes(query.toLowerCase())
+  );
+
+  const stats = {
+    total: projects.length,
+    active: projects.filter((p) => p.status === "σε εξέλιξη").length,
+    urgent: projects.filter((p) => p.status === "επείγον").length,
+    waiting: projects.filter((p) => p.status === "αναμονή").length
+  };
+
+  function submit() {
+    if (!form.name.trim()) return;
+    onAdd({
+      ...form,
+      name: form.name.trim(),
+      deliveryDate: form.deliveryDate || "δεν ορίστηκε"
+    });
+    setForm({
+      name: "",
+      address: "",
+      stage: settings.stages[0] || "",
+      deliveryDate: "",
+      status: settings.statuses[0] || "σε εξέλιξη",
+      crew: "",
+      notes: "",
+      specs: ""
+    });
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Εργοταξιακό App v5</p>
+          <h1>Έργα</h1>
+          <p className="subtitle">Κεντρικό dashboard έργων. Πάτησε σε ένα έργο για να μπεις στη σελίδα διαχείρισής του.</p>
+        </div>
+        <button className="secondary-btn" onClick={onSettings}><Settings size={18} /> Διαχείριση</button>
+      </header>
+
+      <section className="stats-grid">
+        <Stat label="σε εξέλιξη" value={stats.active} />
+        <Stat label="επείγοντα" value={stats.urgent} />
+        <Stat label="σε αναμονή" value={stats.waiting} />
+        <Stat label="όλα τα έργα" value={stats.total} />
+      </section>
+
+      <main className="home-grid">
+        <section className="projects-area">
+          <div className="search-box">
+            <Search size={18} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="αναζήτηση έργου, διεύθυνσης, σταδίου..." />
+          </div>
+
+          <div className="project-grid">
+            {filtered.map((project) => (
+              <button className="project-card" key={project.id} onClick={() => onOpen(project.id)}>
+                <div className="card-head">
+                  <div>
+                    <h3>{project.name}</h3>
+                    <p>{project.stage || "χωρίς στάδιο"}</p>
+                  </div>
+                  <Building2 size={22} />
+                </div>
+                <div className="mini-info"><MapPin size={15} /> {project.address || "χωρίς διεύθυνση"}</div>
+                <div className="mini-info"><CalendarDays size={15} /> Παράδοση: {project.deliveryDate}</div>
+                {project.crew && <div className="mini-info"><Users size={15} /> {project.crew}</div>}
+                <span className={statusClass[project.status] || "status"}>{project.status}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <aside className="form-card">
+          <h2><Plus size={20} /> Νέο έργο</h2>
+          <Field label="Όνομα έργου" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="π.χ. Διαμέρισμα Παπάφη" />
+          <Field label="Διεύθυνση" value={form.address} onChange={(v) => setForm({ ...form, address: v })} placeholder="π.χ. Βούλγαρη" />
+          <Select label="Στάδιο" value={form.stage} options={settings.stages} onChange={(v) => setForm({ ...form, stage: v })} />
+          <Field label="Ημερομηνία παράδοσης" type="date" value={form.deliveryDate} onChange={(v) => setForm({ ...form, deliveryDate: v })} />
+          <Select label="Κατάσταση" value={form.status} options={settings.statuses} onChange={(v) => setForm({ ...form, status: v })} />
+          <Select label="Συνεργείο" value={form.crew} options={["", ...settings.crews]} onChange={(v) => setForm({ ...form, crew: v })} />
+          <TextArea label="Σημειώσεις" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} placeholder="σύντομες παρατηρήσεις..." />
+          <button className="primary-btn" onClick={submit}>Προσθήκη έργου</button>
+        </aside>
+      </main>
+    </div>
+  );
 }
 
-function AdminList({title, icon:Icon, description, items, onAdd, onDelete}) { const [value, setValue] = useState(""); function submit(){const cleaned=value.trim(); if(!cleaned||items.includes(cleaned))return; onAdd(cleaned); setValue("");} return <div className="card admin-card"><h2><Icon size={20}/> {title}</h2><p className="sub small">{description}</p><div className="inline-form"><input value={value} onChange={(e)=>setValue(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter')submit()}} placeholder="Προσθήκη νέου στοιχείου"/><button className="primary compact" onClick={submit}>Προσθήκη</button></div><div className="chips">{items.map((item)=><span className="chip" key={item}>{item}<button onClick={()=>onDelete(item)} title="Διαγραφή"><Trash2 size={14}/></button></span>)}</div></div>; }
-function Stat({label,value}){return <div className="card stat"><span>{label}</span><b>{value}</b></div>}
-function ProjectCard({project,selected,onClick,onDelete}){const Icon=statusIcon(project.status);return <div className={`project ${selected?'selected':''}`} onClick={onClick}><div className="project-top"><div><h3>{project.name}</h3><p>{project.stage}</p></div><Icon size={18}/></div><Info icon={MapPin} text={project.address || "Χωρίς διεύθυνση"}/><Info icon={Users} text={project.crew || "Χωρίς συνεργείο"}/><Info icon={CalendarDays} text={`Παράδοση: ${project.deliveryDate}`}/><div className="card-actions"><Badge status={project.status}/><button className="icon-button" onClick={(e)=>{e.stopPropagation();onDelete();}} title="Διαγραφή έργου"><Trash2 size={16}/></button></div></div>}
-function Input({label,value,onChange,placeholder,type="text"}){return <label><span>{label}</span><input type={type} value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder}/></label>}
-function Select({label,value,options,onChange}){return <label><span>{label}</span><select value={value} onChange={(e)=>onChange(e.target.value)}>{options.map((o)=><option key={o}>{o}</option>)}</select></label>}
-function Info({icon:Icon,text}){return <div className="info"><Icon size={16}/><span>{text}</span></div>}
-function Badge({status}){return <span className={`badge ${safeClass(status)}`}>{status}</span>}
-function safeClass(status){if(status==="Σε εξέλιξη")return "blue"; if(status==="Επείγον")return "red"; if(status==="Αναμονή")return "yellow"; if(status==="Ολοκληρωμένο")return "green"; return "gray";}
-function statusIcon(status){if(status==="Σε εξέλιξη")return Clock; if(status==="Επείγον")return AlertTriangle; if(status==="Ολοκληρωμένο")return CheckCircle2; return ClipboardList;}
+function ProjectPage({ project, settings, tab, onBack, onTab, onUpdate, onDelete }) {
+  const tabs = [
+    { id: "general", label: "Γενικά", icon: FileText },
+    { id: "daily", label: "Ημερολόγιο", icon: CalendarDays },
+    { id: "tasks", label: "Εκκρεμότητες", icon: ClipboardList },
+    { id: "stages", label: "Στάδια εργασιών", icon: Layers },
+    { id: "materials", label: "Υλικά", icon: Package }
+  ];
+
+  return (
+    <div className="project-layout">
+      <aside className="sidebar">
+        <button className="back-btn" onClick={onBack}><ArrowLeft size={18} /> Πίσω στα έργα</button>
+        <div className="project-title">
+          <Building2 size={28} />
+          <div>
+            <h2>{project.name}</h2>
+            <p>{project.address || "χωρίς διεύθυνση"}</p>
+          </div>
+        </div>
+
+        <div className="sidebar-meta">
+          <span className={statusClass[project.status] || "status"}>{project.status}</span>
+          <p><Hammer size={15} /> {project.stage || "χωρίς στάδιο"}</p>
+          <p><CalendarDays size={15} /> {project.deliveryDate}</p>
+          {project.crew && <p><Users size={15} /> {project.crew}</p>}
+        </div>
+
+        <nav className="tab-nav">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button key={id} className={tab === id ? "active" : ""} onClick={() => onTab(id)}>
+              <Icon size={18} /> {label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="detail-main">
+        <div className="detail-header">
+          <div>
+            <p className="eyebrow">Σελίδα έργου</p>
+            <h1>{project.name}</h1>
+            <p className="subtitle">Επαγγελματική δομή με sidebar και καρτέλες για να προσθέτουμε σταδιακά όλες τις λειτουργίες.</p>
+          </div>
+          <button className="danger-btn" onClick={onDelete}><Trash2 size={18} /> Διαγραφή έργου</button>
+        </div>
+
+        {tab === "general" && (
+          <section className="detail-card">
+            <h2>Γενικά στοιχεία</h2>
+            <div className="two-col">
+              <Field label="Όνομα έργου" value={project.name} onChange={(v) => onUpdate({ name: v })} />
+              <Field label="Διεύθυνση" value={project.address} onChange={(v) => onUpdate({ address: v })} />
+              <Select label="Στάδιο" value={project.stage} options={settings.stages} onChange={(v) => onUpdate({ stage: v })} />
+              <Select label="Κατάσταση" value={project.status} options={settings.statuses} onChange={(v) => onUpdate({ status: v })} />
+              <Field label="Ημερομηνία παράδοσης" type="date" value={project.deliveryDate === "δεν ορίστηκε" ? "" : project.deliveryDate} onChange={(v) => onUpdate({ deliveryDate: v })} />
+              <Select label="Συνεργείο" value={project.crew || ""} options={["", ...settings.crews]} onChange={(v) => onUpdate({ crew: v })} />
+            </div>
+            <TextArea label="Σημειώσεις" value={project.notes || ""} onChange={(v) => onUpdate({ notes: v })} />
+            <TextArea label="Τεχνικές προδιαγραφές" value={project.specs || ""} onChange={(v) => onUpdate({ specs: v })} placeholder="μόνιμες τεχνικές πληροφορίες που πρέπει να θυμάμαι για όλη τη διάρκεια του έργου..." tall />
+          </section>
+        )}
+
+        {tab === "daily" && <Placeholder title="Ημερολόγιο εργοταξίου" text="Εδώ θα προσθέσουμε ημερήσιες καταγραφές: τι έγινε σήμερα, ποιο συνεργείο δούλεψε, φωτογραφίες και παρατηρήσεις." />}
+        {tab === "tasks" && <Placeholder title="Εκκρεμότητες" text="Εδώ θα προσθέσουμε λίστα εργασιών, προτεραιότητα, υπεύθυνο και κατάσταση ολοκλήρωσης." />}
+        {tab === "stages" && (
+          <section className="detail-card">
+            <h2>Στάδια εργασιών</h2>
+            <p className="subtitle">Προς το παρόν εμφανίζονται τα διαθέσιμα στάδια από τη Διαχείριση. Στο επόμενο βήμα μπορούν να γίνουν checklist ανά έργο.</p>
+            <div className="pill-grid">
+              {settings.stages.map((s) => <span className="pill" key={s}>{s}</span>)}
+            </div>
+          </section>
+        )}
+        {tab === "materials" && <Placeholder title="Υλικά" text="Εδώ θα προσθέσουμε παραγγελίες, προμηθευτές, ποσότητες, κόστος και κατάσταση παράδοσης." />}
+      </main>
+    </div>
+  );
+}
+
+function SettingsPage({ settings, setSettings, onBack }) {
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Διαχείριση</p>
+          <h1>Ρυθμίσεις εφαρμογής</h1>
+          <p className="subtitle">Πρόσθεσε καταστάσεις, στάδια εργασιών και συνεργεία.</p>
+        </div>
+        <button className="secondary-btn" onClick={onBack}><Home size={18} /> Πίσω</button>
+      </header>
+
+      <section className="settings-grid">
+        <ManageList title="Καταστάσεις έργου" items={settings.statuses} onChange={(items) => setSettings({ ...settings, statuses: items })} />
+        <ManageList title="Στάδια εργασιών" items={settings.stages} onChange={(items) => setSettings({ ...settings, stages: items })} allowBulk />
+        <ManageList title="Συνεργεία" items={settings.crews} onChange={(items) => setSettings({ ...settings, crews: items })} />
+      </section>
+    </div>
+  );
+}
+
+function ManageList({ title, items, onChange, allowBulk }) {
+  const [value, setValue] = useState("");
+  const [bulk, setBulk] = useState("");
+
+  function addOne() {
+    const clean = value.trim();
+    if (!clean) return;
+    if (!items.includes(clean)) onChange([...items, clean]);
+    setValue("");
+  }
+
+  function addBulk() {
+    const next = bulk.split("\n").map((x) => x.trim()).filter(Boolean);
+    const merged = Array.from(new Set([...items, ...next]));
+    onChange(merged);
+    setBulk("");
+  }
+
+  return (
+    <div className="detail-card">
+      <h2>{title}</h2>
+      <div className="inline-add">
+        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="νέα τιμή..." />
+        <button className="primary-btn compact" onClick={addOne}>Προσθήκη</button>
+      </div>
+      {allowBulk && (
+        <div className="bulk-box">
+          <textarea value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder="μαζική εισαγωγή: μία γραμμή = ένα στάδιο" />
+          <button className="secondary-btn" onClick={addBulk}>Μαζική προσθήκη</button>
+        </div>
+      )}
+      <div className="list-box">
+        {items.map((item) => (
+          <div className="list-row" key={item}>
+            <span>{item}</span>
+            <button onClick={() => onChange(items.filter((x) => x !== item))}><Trash2 size={16} /></button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Placeholder({ title, text }) {
+  return (
+    <section className="detail-card placeholder">
+      <Wrench size={42} />
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </section>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="stat-card">
+      <p>{label}</p>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder = "", type = "text" }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input type={type} value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    </label>
+  );
+}
+
+function Select({ label, value, options, onChange }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <select value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => <option key={o} value={o}>{o || "—"}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function TextArea({ label, value, onChange, placeholder = "", tall = false }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <textarea className={tall ? "tall" : ""} value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    </label>
+  );
+}
+
 createRoot(document.getElementById("root")).render(<App />);

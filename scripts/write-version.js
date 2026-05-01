@@ -1,15 +1,8 @@
 import fs from "fs";
 import pkg from "../package.json" with { type: "json" };
 
-const commit =
-  process.env.VERCEL_GIT_COMMIT_SHA ||
-  process.env.GITHUB_SHA ||
-  "local";
-
-const branch =
-  process.env.VERCEL_GIT_COMMIT_REF ||
-  process.env.GITHUB_REF_NAME ||
-  "local";
+const commit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || "local";
+const branch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GITHUB_REF_NAME || "local";
 
 const payload = {
   version: `v${pkg.version.split(".")[0]}`,

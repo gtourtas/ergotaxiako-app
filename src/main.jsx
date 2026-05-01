@@ -2,14 +2,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  ArrowLeft, Banknote, Building2, CalendarDays, ClipboardList,
-  FileText, GanttChartSquare, Hammer, Home, Layers, Link2,
-  MapPin, Package, Plus, Search, Settings, Trash2, Users, Wrench
+  ArrowLeft, Banknote, Building2, CalendarDays, ClipboardList, FileText,
+  GanttChartSquare, Home, Layers, Link2, MapPin, MoreVertical, Package,
+  Plus, Search, Settings, Trash2, Wrench, ListChecks
 } from "lucide-react";
 import versionInfo from "./version.json";
 import "./style.css";
 
-const STORAGE_KEY = "ergotaxiako_app_v10";
+const STORAGE_KEY = "ergotaxiako_app_v11";
 
 const defaultStages = [
   "Αποξηλώσεις", "Αποξήλωση μαρμάρων", "Αποκομιδή μπάζων", "Προσωρινά κουφώματα",
@@ -45,26 +45,24 @@ const defaultSettings = {
   accountFields: defaultAccountFields
 };
 
-const defaultProjects = [
-  {
-    id: 1,
-    name: "Λύτρα 5",
-    address: "Θεσσαλονίκη",
-    stage: "Ηλεκτρολογικά",
-    deliveryDate: "2026-05-20",
-    status: "Σε εξέλιξη",
-    crew: "Ηλεκτρολόγος",
-    notes: "Ανακαίνιση διαμερίσματος.",
-    specs: "Τεχνικές προδιαγραφές έργου: παροχές, θέσεις, ύψη, ειδικές παρατηρήσεις.",
-    accounts: [],
-    schedule: []
-  }
-];
+const defaultProjects = [{
+  id: 1,
+  name: "Λύτρα 5",
+  address: "Θεσσαλονίκη",
+  stage: "Ηλεκτρολογικά",
+  deliveryDate: "2026-05-20",
+  status: "Σε εξέλιξη",
+  notes: "Ανακαίνιση διαμερίσματος.",
+  specs: "Τεχνικές προδιαγραφές έργου.",
+  accounts: [],
+  schedule: []
+}];
 
 function loadState() {
   try {
     const raw =
       localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem("ergotaxiako_app_v10") ||
       localStorage.getItem("ergotaxiako_app_v9") ||
       localStorage.getItem("ergotaxiako_app_v8") ||
       localStorage.getItem("ergotaxiako_app_v7");
@@ -104,7 +102,7 @@ function daysBetween(start, end) {
 function isDelayed(item) {
   if (!item.endDate || item.status === "Ολοκληρώθηκε") return false;
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(0,0,0,0);
   return dateValue(item.endDate) < today.getTime();
 }
 
@@ -122,6 +120,7 @@ function App() {
   const [view, setView] = useState({ type: "home" });
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showNewProject, setShowNewProject] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, settings }));
@@ -132,6 +131,7 @@ function App() {
   function addProject(project) {
     const next = { ...project, id: Date.now(), accounts: [], schedule: [] };
     setProjects([next, ...projects]);
+    setShowNewProject(false);
     setView({ type: "project", projectId: next.id, tab: "general" });
   }
 
@@ -144,54 +144,39 @@ function App() {
     setView({ type: "home" });
   }
 
+  if (view.type === "project" && selectedProject) {
+    return <ProjectPage project={selectedProject} settings={settings} tab={view.tab || "general"} onBack={() => setView({ type: "home" })} onTab={(tab) => setView({ type: "project", projectId: selectedProject.id, tab })} onUpdate={(patch) => updateProject(selectedProject.id, patch)} onDelete={() => deleteProject(selectedProject.id)} />;
+  }
+
+  if (view.type === "settings") {
+    return <SettingsPage settings={settings} setSettings={setSettings} route={view.section || "index"} onRoute={(section) => setView({ type: "settings", section })} onBack={() => setView({ type: "home" })} />;
+  }
+
   return (
-    <>
-      {view.type === "project" && selectedProject ? (
-        <ProjectPage
-          project={selectedProject}
-          settings={settings}
-          tab={view.tab || "general"}
-          onBack={() => setView({ type: "home" })}
-          onTab={(tab) => setView({ type: "project", projectId: selectedProject.id, tab })}
-          onUpdate={(patch) => updateProject(selectedProject.id, patch)}
-          onDelete={() => deleteProject(selectedProject.id)}
-        />
-      ) : view.type === "settings" ? (
-        <SettingsPage settings={settings} setSettings={setSettings} onBack={() => setView({ type: "home" })} />
-      ) : (
-        <HomePage
-          projects={projects}
-          settings={settings}
-          query={query}
-          setQuery={setQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          onAdd={addProject}
-          onOpen={(projectId) => setView({ type: "project", projectId, tab: "general" })}
-          onSettings={() => setView({ type: "settings" })}
-        />
-      )}
-      <VersionBadge />
-    </>
+    <HomePage
+      projects={projects}
+      settings={settings}
+      query={query}
+      setQuery={setQuery}
+      statusFilter={statusFilter}
+      setStatusFilter={setStatusFilter}
+      onAdd={addProject}
+      onOpen={(projectId) => setView({ type: "project", projectId, tab: "general" })}
+      onSettings={() => setView({ type: "settings", section: "index" })}
+      showNewProject={showNewProject}
+      setShowNewProject={setShowNewProject}
+    />
   );
 }
 
-function VersionBadge() {
-  return (
-    <div className="version-badge">
-      {versionInfo.version} · commit {versionInfo.commit} · {versionInfo.branch}
-    </div>
-  );
-}
-
-function HomePage({ projects, settings, query, setQuery, statusFilter, setStatusFilter, onAdd, onOpen, onSettings }) {
+function HomePage({ projects, settings, query, setQuery, statusFilter, setStatusFilter, onAdd, onOpen, onSettings, showNewProject, setShowNewProject }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
     address: "",
     stage: settings.stages[0] || "",
     deliveryDate: "",
     status: "Σε εξέλιξη",
-    crew: "",
     notes: "",
     specs: ""
   });
@@ -210,7 +195,7 @@ function HomePage({ projects, settings, query, setQuery, statusFilter, setStatus
   function submit() {
     if (!form.name.trim()) return;
     onAdd({ ...form, deliveryDate: form.deliveryDate || "Δεν ορίστηκε" });
-    setForm({ name: "", address: "", stage: settings.stages[0] || "", deliveryDate: "", status: "Σε εξέλιξη", crew: "", notes: "", specs: "" });
+    setForm({ name: "", address: "", stage: settings.stages[0] || "", deliveryDate: "", status: "Σε εξέλιξη", notes: "", specs: "" });
   }
 
   return (
@@ -219,10 +204,31 @@ function HomePage({ projects, settings, query, setQuery, statusFilter, setStatus
         <div>
           <p className="eyebrow">Εργοταξιακό App</p>
           <h1>Έργα</h1>
-          <p className="subtitle">Dashboard έργων με φίλτρα, διαχείριση και σελίδα έργου.</p>
+          <p className="subtitle">Dashboard έργων με φίλτρα, taskbar και μενού ενεργειών.</p>
         </div>
-        <button className="secondary-btn" onClick={onSettings}><Settings size={18} /> Διαχείριση</button>
+
+        <div className="header-actions">
+          <button className="secondary-btn" onClick={onSettings}><Settings size={18} /> Διαχείριση</button>
+          <div className="more-wrap">
+            <button className="icon-btn" onClick={() => setMenuOpen(!menuOpen)}><MoreVertical size={20} /></button>
+            {menuOpen && (
+              <div className="more-menu">
+                <button onClick={() => { setShowNewProject(true); setMenuOpen(false); }}><Plus size={16} /> Προσθήκη έργου</button>
+                <button onClick={() => { setStatusFilter("all"); setMenuOpen(false); }}><ListChecks size={16} /> Όλα τα έργα</button>
+                <button onClick={() => { onSettings(); setMenuOpen(false); }}><Settings size={16} /> Διαχείριση</button>
+              </div>
+            )}
+          </div>
+        </div>
       </header>
+
+      <nav className="taskbar">
+        <button className={statusFilter === "all" ? "active" : ""} onClick={() => setStatusFilter("all")}>Όλα</button>
+        <button className={statusFilter === "Σε εξέλιξη" ? "active" : ""} onClick={() => setStatusFilter("Σε εξέλιξη")}>Σε εξέλιξη</button>
+        <button className={statusFilter === "Επείγον" ? "active" : ""} onClick={() => setStatusFilter("Επείγον")}>Επείγοντα</button>
+        <button className={statusFilter === "Αναμονή" ? "active" : ""} onClick={() => setStatusFilter("Αναμονή")}>Αναμονή</button>
+        <button onClick={() => setShowNewProject(true)}>+ Νέο έργο</button>
+      </nav>
 
       <section className="stats-grid">
         <StatButton label="Σε εξέλιξη" value={stats.active} active={statusFilter === "Σε εξέλιξη"} onClick={() => setStatusFilter(statusFilter === "Σε εξέλιξη" ? "all" : "Σε εξέλιξη")} />
@@ -231,37 +237,43 @@ function HomePage({ projects, settings, query, setQuery, statusFilter, setStatus
         <StatButton label="Όλα τα έργα" value={stats.total} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
       </section>
 
-      <main className="home-grid">
-        <section>
-          <div className="search-box">
-            <Search size={18} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Αναζήτηση έργου..." />
-          </div>
-          <div className="project-grid">
-            {filtered.map((project) => (
-              <button className="project-card" key={project.id} onClick={() => onOpen(project.id)}>
-                <div className="card-head">
-                  <div><h3>{project.name}</h3><p>{project.stage}</p></div>
-                  <Building2 size={22} />
-                </div>
-                <div className="mini-info"><MapPin size={15} /> {project.address || "Χωρίς διεύθυνση"}</div>
-                <div className="mini-info"><CalendarDays size={15} /> Παράδοση: {project.deliveryDate}</div>
-                <span className={statusClass[project.status] || "status"}>{project.status}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+      <main>
+        <div className="search-box">
+          <Search size={18} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Αναζήτηση έργου..." />
+        </div>
 
-        <aside className="form-card">
-          <h2><Plus size={20} /> Νέο έργο</h2>
-          <Field label="Όνομα έργου" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-          <Field label="Διεύθυνση" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
-          <Select label="Στάδιο" value={form.stage} options={settings.stages} onChange={(v) => setForm({ ...form, stage: v })} />
-          <Field label="Ημερομηνία παράδοσης" type="date" value={form.deliveryDate} onChange={(v) => setForm({ ...form, deliveryDate: v })} />
-          <Select label="Κατάσταση" value={form.status} options={settings.statuses} onChange={(v) => setForm({ ...form, status: v })} />
-          <TextArea label="Σημειώσεις" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
-          <button className="primary-btn" onClick={submit}>Προσθήκη έργου</button>
-        </aside>
+        {showNewProject && (
+          <section className="detail-card new-project-panel">
+            <div className="panel-head">
+              <h2><Plus size={20} /> Προσθήκη έργου</h2>
+              <button className="secondary-btn" onClick={() => setShowNewProject(false)}>Κλείσιμο</button>
+            </div>
+            <div className="two-col">
+              <Field label="Όνομα έργου" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
+              <Field label="Διεύθυνση" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
+              <Select label="Στάδιο" value={form.stage} options={settings.stages} onChange={(v) => setForm({ ...form, stage: v })} />
+              <Field label="Ημερομηνία παράδοσης" type="date" value={form.deliveryDate} onChange={(v) => setForm({ ...form, deliveryDate: v })} />
+              <Select label="Κατάσταση" value={form.status} options={settings.statuses} onChange={(v) => setForm({ ...form, status: v })} />
+            </div>
+            <TextArea label="Σημειώσεις" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
+            <button className="primary-btn" onClick={submit}>Αποθήκευση έργου</button>
+          </section>
+        )}
+
+        <div className="project-grid">
+          {filtered.map((project) => (
+            <button className="project-card" key={project.id} onClick={() => onOpen(project.id)}>
+              <div className="card-head">
+                <div><h3>{project.name}</h3><p>{project.stage}</p></div>
+                <Building2 size={22} />
+              </div>
+              <div className="mini-info"><MapPin size={15} /> {project.address || "Χωρίς διεύθυνση"}</div>
+              <div className="mini-info"><CalendarDays size={15} /> Παράδοση: {project.deliveryDate}</div>
+              <span className={statusClass[project.status] || "status"}>{project.status}</span>
+            </button>
+          ))}
+        </div>
       </main>
     </div>
   );
@@ -475,12 +487,112 @@ function ScheduleTab({ project, settings, onUpdate }) {
   );
 }
 
-function StagesTab({ stages }) {
+function SettingsPage({ settings, setSettings, route, onRoute, onBack }) {
+  const sections = [
+    { id: "accountFields", title: "Πεδία λογαριασμών" },
+    { id: "crews", title: "Συνεργεία" },
+    { id: "stages", title: "Στάδια εργασιών" },
+    { id: "statuses", title: "Καταστάσεις έργου" }
+  ].sort((a, b) => a.title.localeCompare(b.title, "el"));
+
+  if (route !== "index") {
+    const selected = sections.find((s) => s.id === route);
+    return (
+      <div className="app-shell">
+        <header className="topbar">
+          <div><p className="eyebrow">Διαχείριση</p><h1>{selected?.title}</h1></div>
+          <button className="secondary-btn" onClick={() => onRoute("index")}><ArrowLeft size={18} /> Πίσω στη Διαχείριση</button>
+        </header>
+
+        {route === "statuses" && <ManageList title="Καταστάσεις έργου" items={settings.statuses} onChange={(items) => setSettings({ ...settings, statuses: items })} allowBulk />}
+        {route === "stages" && <ManageList title="Στάδια εργασιών" items={settings.stages} onChange={(items) => setSettings({ ...settings, stages: items })} allowBulk />}
+        {route === "crews" && <ManageList title="Συνεργεία" items={settings.crews} onChange={(items) => setSettings({ ...settings, crews: items })} allowBulk />}
+        {route === "accountFields" && <AccountFieldsSettings settings={settings} setSettings={setSettings} />}
+        <VersionBadge />
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div><p className="eyebrow">Ρυθμίσεις</p><h1>Διαχείριση</h1></div>
+        <button className="secondary-btn" onClick={onBack}><Home size={18} /> Πίσω</button>
+      </header>
+
+      <div className="settings-list">
+        {sections.map((section) => (
+          <button key={section.id} className="settings-row" onClick={() => onRoute(section.id)}>
+            <span>{section.title}</span>
+            <small>Άνοιγμα</small>
+          </button>
+        ))}
+      </div>
+
+      <VersionBadge />
+    </div>
+  );
+}
+
+function AccountFieldsSettings({ settings, setSettings }) {
   return (
     <section className="detail-card">
-      <h2>Στάδια εργασιών</h2>
-      <div className="ordered-stages">
-        {stages.map((s, i) => <div className="ordered-stage" key={s}><span>{i + 1}</span><p>{s}</p></div>)}
+      <h2>Πεδία λογαριασμών</h2>
+      <div className="field-toggle-grid">
+        {settings.accountFields.map((field) => (
+          <button
+            key={field.key}
+            className={`field-toggle ${field.enabled ? "enabled" : ""}`}
+            onClick={() => setSettings({
+              ...settings,
+              accountFields: settings.accountFields.map((f) => f.key === field.key ? { ...f, enabled: !f.enabled } : f)
+            })}
+          >
+            <span>{field.label}</span>
+            <small>{field.enabled ? "Ενεργό" : "Ανενεργό"}</small>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ManageList({ title, items, onChange, allowBulk }) {
+  const [value, setValue] = useState("");
+  const [bulk, setBulk] = useState("");
+
+  function add() {
+    if (!value.trim()) return;
+    onChange([...items, value.trim()]);
+    setValue("");
+  }
+
+  function addBulk() {
+    const next = bulk.split("\n").map((x) => x.trim()).filter(Boolean);
+    onChange(Array.from(new Set([...items, ...next])));
+    setBulk("");
+  }
+
+  return (
+    <section className="detail-card">
+      <h2>{title}</h2>
+      <div className="inline-add">
+        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Νέα τιμή..." />
+        <button className="primary-btn compact" onClick={add}>Προσθήκη</button>
+      </div>
+      {allowBulk && (
+        <div className="bulk-box">
+          <textarea value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder="Μαζική προσθήκη: μία γραμμή = μία τιμή" />
+          <button className="secondary-btn" onClick={addBulk}>Μαζική προσθήκη</button>
+        </div>
+      )}
+      <div className="list-box">
+        {items.map((item, index) => (
+          <div className="list-row" key={`${item}-${index}`}>
+            <span>{item}</span>
+            <button onClick={() => onChange(items.filter((_, i) => i !== index))}><Trash2 size={16} /></button>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -523,68 +635,23 @@ function AccountsTab({ project, settings, onUpdate }) {
   );
 }
 
-function SettingsPage({ settings, setSettings, onBack }) {
+function StagesTab({ stages }) {
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div><p className="eyebrow">Διαχείριση</p><h1>Ρυθμίσεις εφαρμογής</h1></div>
-        <button className="secondary-btn" onClick={onBack}><Home size={18} /> Πίσω</button>
-      </header>
-      <section className="settings-grid">
-        <ManageList title="Καταστάσεις έργου" items={settings.statuses} onChange={(items) => setSettings({ ...settings, statuses: items })} />
-        <ManageList title="Στάδια εργασιών" items={settings.stages} onChange={(items) => setSettings({ ...settings, stages: items })} />
-        <ManageList title="Συνεργεία" items={settings.crews} onChange={(items) => setSettings({ ...settings, crews: items })} />
-      </section>
-      <section className="detail-card">
-        <h2>Πεδία λογαριασμών</h2>
-        <div className="field-toggle-grid">
-          {settings.accountFields.map((field) => (
-            <button
-              key={field.key}
-              className={`field-toggle ${field.enabled ? "enabled" : ""}`}
-              onClick={() => setSettings({
-                ...settings,
-                accountFields: settings.accountFields.map((f) => f.key === field.key ? { ...f, enabled: !f.enabled } : f)
-              })}
-            >
-              <span>{field.label}</span>
-              <small>{field.enabled ? "Ενεργό" : "Ανενεργό"}</small>
-            </button>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ManageList({ title, items, onChange }) {
-  const [value, setValue] = useState("");
-  function add() {
-    if (!value.trim()) return;
-    onChange([...items, value.trim()]);
-    setValue("");
-  }
-  return (
-    <div className="detail-card">
-      <h2>{title}</h2>
-      <div className="inline-add">
-        <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Νέα τιμή..." />
-        <button className="primary-btn compact" onClick={add}>Προσθήκη</button>
+    <section className="detail-card">
+      <h2>Στάδια εργασιών</h2>
+      <div className="ordered-stages">
+        {stages.map((s, i) => <div className="ordered-stage" key={s}><span>{i + 1}</span><p>{s}</p></div>)}
       </div>
-      <div className="list-box">
-        {items.map((item, index) => (
-          <div className="list-row" key={`${item}-${index}`}>
-            <span>{item}</span>
-            <button onClick={() => onChange(items.filter((_, i) => i !== index))}><Trash2 size={16} /></button>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }
 
 function Placeholder({ title, text }) {
   return <section className="detail-card placeholder"><Wrench size={42} /><h2>{title}</h2><p>{text}</p></section>;
+}
+
+function VersionBadge() {
+  return <div className="version-badge">{versionInfo.version} · commit {versionInfo.commit} · {versionInfo.branch}</div>;
 }
 
 function StatButton({ label, value, active, onClick }) {

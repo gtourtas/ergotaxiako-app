@@ -1,6 +1,6 @@
 {
   "name": "ergotaxiako-app",
-  "version": "13.0.0",
+  "version": "14.0.0",
   "type": "module",
   "scripts": {
     "prebuild": "node scripts/write-version.js",
@@ -13,7 +13,8 @@
     "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "lucide-react": "latest",
+    "tesseract.js": "latest"
   },
   "devDependencies": {}
 }

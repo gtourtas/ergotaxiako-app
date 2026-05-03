@@ -130,3 +130,158 @@
   .month-day{min-height:86px;padding:6px;border-radius:10px}
   .day-pill{font-size:10px;padding:3px 5px}
 }
+
+
+/* v22 visible home calendar entry */
+.home-action-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin:0 0 18px;
+}
+.home-calendar-entry{
+  width:100%;
+  border:1px solid #dbe3ef;
+  border-radius:22px;
+  background:linear-gradient(135deg,#ffffff,#f8fafc);
+  box-shadow:0 8px 24px rgba(15,23,42,.06);
+  padding:20px 22px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  text-align:left;
+  color:#0f172a;
+}
+.home-calendar-entry:hover{
+  border-color:#0f172a;
+  transform:translateY(-1px);
+}
+.home-action-eyebrow{
+  display:inline-flex;
+  color:#2563eb;
+  font-weight:900;
+  font-size:13px;
+  margin-bottom:6px;
+}
+.home-calendar-entry strong{
+  display:block;
+  font-size:22px;
+  font-weight:950;
+  letter-spacing:-.03em;
+}
+.home-calendar-entry p{
+  margin:6px 0 0;
+  color:#64748b;
+}
+.home-calendar-entry svg{
+  color:#2563eb;
+  flex:0 0 auto;
+}
+@media(max-width:980px){
+  .home-calendar-entry{
+    padding:18px;
+    align-items:flex-start;
+  }
+  .home-calendar-entry strong{
+    font-size:20px;
+  }
+}
+
+
+/* v23 sticky breadcrumb taskbar */
+.sticky-breadcrumb-wrap{
+  position:sticky;
+  top:0;
+  z-index:80;
+  margin:0 0 18px;
+  padding-top:8px;
+  background:linear-gradient(180deg,#f6f8fb 0%,#f6f8fb 72%,rgba(246,248,251,0) 100%);
+}
+.sticky-breadcrumb{
+  min-height:48px;
+  background:#f1f3f5;
+  border:1px solid #e2e8f0;
+  border-radius:6px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:0 14px;
+  box-shadow:0 4px 14px rgba(15,23,42,.04);
+}
+.breadcrumb-links{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.breadcrumb-links button{
+  border:0;
+  background:transparent;
+  color:#0070c9;
+  font-weight:800;
+  padding:6px 0;
+  font-size:16px;
+}
+.breadcrumb-links button:hover{
+  text-decoration:underline;
+}
+.breadcrumb-links button.current,
+.breadcrumb-links button:disabled{
+  color:#94a3b8;
+  cursor:default;
+  text-decoration:none;
+}
+.breadcrumb-links span{
+  color:#cbd5e1;
+  font-weight:900;
+  font-size:18px;
+}
+.breadcrumb-menu{
+  border:0;
+  background:transparent;
+  color:#0f2744;
+  font-size:22px;
+  font-weight:900;
+  padding:6px;
+}
+.local-route{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:16px;
+  color:#64748b;
+}
+.local-route button{
+  border:0;
+  background:transparent;
+  color:#0070c9;
+  font-weight:900;
+  padding:0;
+}
+.local-route strong{
+  color:#0f172a;
+}
+@media(max-width:980px){
+  .sticky-breadcrumb-wrap{
+    top:0;
+    margin-left:-6px;
+    margin-right:-6px;
+  }
+  .sticky-breadcrumb{
+    min-height:44px;
+    padding:0 10px;
+  }
+  .breadcrumb-links{
+    gap:7px;
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding-bottom:2px;
+  }
+  .breadcrumb-links button{
+    font-size:14px;
+    white-space:nowrap;
+  }
+}

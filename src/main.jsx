@@ -9,7 +9,7 @@ import versionInfo from "./version.json";
 import "./style.css";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-const STORAGE_KEY="ergotaxiako_app_v33";
+const STORAGE_KEY="ergotaxiako_app_v34";
 
 const stages=["Αποξηλώσεις","Ηλεκτρολόγος","Υδραυλικός","Γκρο μπετά","Πλακάκια μπάνιου","Κουζίνα","Διακόπτες","Φωτιστικά","Τελικό βάψιμο","Παράδοση έργου"];
 const switchCats=["Πρίζες","Διακόπτες","DATA / TV","Πλαίσια","Πλακίδια","Ειδικά"];
@@ -174,16 +174,58 @@ function makeDeliveryNumber(existing=[]){
   return `ΔΑ-${String(next).padStart(4,"0")}`;
 }
 
+
+function ensureArray(value){
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeProject(project){
+  const address = project?.address || project?.name || "Νέο έργο";
+  return {
+    ...project,
+    name: address,
+    address,
+    accounts: ensureArray(project?.accounts),
+    schedule: ensureArray(project?.schedule),
+    switchMaterials: ensureArray(project?.switchMaterials),
+    warehouseMaterials: ensureArray(project?.warehouseMaterials),
+    plans: ensureArray(project?.plans),
+    orderSlips: ensureArray(project?.orderSlips),
+    requests: ensureArray(project?.requests)
+  };
+}
+
+function normalizeSettings(settings){
+  return {
+    ...defaultSettings,
+    ...(settings || {}),
+    warehouse: settings?.warehouse || defaultWarehouse,
+    planSlots: ensureArray(settings?.planSlots).length ? settings.planSlots : defaultPlanSlots,
+    companyTools: ensureArray(settings?.companyTools).length ? settings.companyTools : defaultCompanyTools,
+    accountFields: mergeAccountFields(settings?.accountFields)
+  };
+}
+
+function safeProjectTitle(project){
+  return project?.address || project?.name || "Νέο έργο";
+}
+
 function loadState(){
  try{
-  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v32")||localStorage.getItem("ergotaxiako_app_v31")||localStorage.getItem("ergotaxiako_app_v30")||localStorage.getItem("ergotaxiako_app_v29")||localStorage.getItem("ergotaxiako_app_v28")||localStorage.getItem("ergotaxiako_app_v27")||localStorage.getItem("ergotaxiako_app_v26")||localStorage.getItem("ergotaxiako_app_v24")||localStorage.getItem("ergotaxiako_app_v23")||localStorage.getItem("ergotaxiako_app_v22")||localStorage.getItem("ergotaxiako_app_v21")||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
-  if(!raw)return{projects:defaultProjects,settings:{...defaultSettings,warehouse:defaultWarehouse}};
-  const p=JSON.parse(raw);
-  const loadedProjects=(p.projects?.length?p.projects:defaultProjects).map(pr=>({...pr,accounts:pr.accounts||[],schedule:pr.schedule||[],switchMaterials:pr.switchMaterials||[],warehouseMaterials:pr.warehouseMaterials||[],plans:pr.plans||[],orderSlips:pr.orderSlips||[],requests:pr.requests||[]}));
-  if(!loadedProjects.some(p=>p.name==="Π. Ιωακείμ 14")) loadedProjects.unshift(defaultProjects[0]);
-  return{projects:loadedProjects,settings:{...defaultSettings,...(p.settings||{}),warehouse:p.settings?.warehouse||defaultWarehouse,planSlots:p.settings?.planSlots||defaultPlanSlots,companyTools:p.settings?.companyTools||defaultCompanyTools,accountFields:mergeAccountFields(p.settings?.accountFields)}};
- }catch{return{projects:defaultProjects,settings:{...defaultSettings,warehouse:defaultWarehouse}}}
+  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v33")||localStorage.getItem("ergotaxiako_app_v32")||localStorage.getItem("ergotaxiako_app_v31")||localStorage.getItem("ergotaxiako_app_v30")||localStorage.getItem("ergotaxiako_app_v29")||localStorage.getItem("ergotaxiako_app_v28")||localStorage.getItem("ergotaxiako_app_v27");
+  if(!raw)return{projects:defaultProjects.map(normalizeProject),settings:normalizeSettings(defaultSettings)};
+  const parsed=JSON.parse(raw);
+  let loadedProjects=ensureArray(parsed.projects).length ? parsed.projects.map(normalizeProject) : defaultProjects.map(normalizeProject);
+  if(!loadedProjects.some(p=>p.name==="Π. Ιωακείμ 14" || p.address==="Π. Ιωακείμ 14")){
+    loadedProjects.unshift(normalizeProject(defaultProjects[0]));
+  }
+  return {projects:loadedProjects,settings:normalizeSettings(parsed.settings)};
+ }catch(error){
+  console.warn("State load failed, using defaults", error);
+  return{projects:defaultProjects.map(normalizeProject),settings:normalizeSettings(defaultSettings)};
+ }
 }
+
 function mergeAccountFields(saved=[]){return accountFields.map(f=>{const s=saved.find(x=>x.key===f.key);return s?{...f,...s,ocrAliases:s.ocrAliases?.length?s.ocrAliases:f.ocrAliases}:f})}
 function formatEuro(v){return (Number(v)||0).toLocaleString("el-GR",{minimumFractionDigits:2,maximumFractionDigits:2})+"€"}
 function formatGreekDate(v){if(!v)return"";const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:v}
@@ -244,10 +286,10 @@ function App(){
  const[filter,setFilter]=useState("all");
  const[showNew,setShowNew]=useState(false);
  useEffect(()=>localStorage.setItem(STORAGE_KEY,JSON.stringify({projects,settings})),[projects,settings]);
- const selected=projects.find(p=>p.id===view.projectId);
+ const selected=projects.find(p=>String(p.id)===String(view.projectId));
  if(!unlocked)return <LoginGate onUnlock={()=>setUnlocked(true)}/>;
  function updateProject(id,patch){setProjects(projects.map(p=>p.id===id?{...p,...patch}:p))}
- function addProject(p){const title=(p.address||p.name||"Νέο έργο").trim();const n={...p,name:title,address:p.address||title,id:Date.now(),accounts:[],schedule:[],switchMaterials:[],warehouseMaterials:[],plans:[],orderSlips:[],requests:[]};setProjects([n,...projects]);setShowNew(false);setView({type:"project",projectId:n.id,tab:"general"})}
+ function addProject(p){const address=(p.address||p.name||"Νέο έργο").trim();if(!address)return;const n=normalizeProject({...p,name:address,address,id:Date.now()});setProjects([n,...projects]);setShowNew(false);setView({type:"project",projectId:n.id,tab:"general"})}
  if(view.type==="tools")return <AppLayout projects={projects} current="tools" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><ToolsPage settings={settings} setSettings={setSettings} projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})}/></AppLayout>;
  if(view.type==="warehouse")return <AppLayout projects={projects} current="warehouse" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><WarehousePage settings={settings} setSettings={setSettings} projects={projects} setProjects={setProjects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"warehouseMaterials"})}/></AppLayout>;
  if(view.type==="calendar")return <AppLayout projects={projects} current="calendar" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><HomeCalendarPage projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"accounts"})}/></AppLayout>;
@@ -343,7 +385,7 @@ function HomePage({projects,settings,query,setQuery,filter,setFilter,onOpen,onSe
  const[form,setForm]=useState({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""});
  const stats={total:projects.length,active:projects.filter(p=>p.status==="Σε εξέλιξη").length,urgent:projects.filter(p=>p.status==="Επείγον").length,waiting:projects.filter(p=>p.status==="Αναμονή").length};
  const filtered=projects.filter(p=>(filter==="all"||p.status===filter)&&`${p.name} ${p.address} ${p.stage}`.toLowerCase().includes(query.toLowerCase()));
- function submit(){if(!form.address.trim())return;onAdd({...form,name:form.address.trim(),deliveryDate:form.deliveryDate||"Δεν ορίστηκε"});setForm({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""})}
+ function submit(){const address=(form.address||"").trim();if(!address){alert("Συμπλήρωσε τη διεύθυνση έργου.");return;}onAdd({...form,name:address,address,deliveryDate:form.deliveryDate||"Δεν ορίστηκε"});setForm({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""});}
  return <div className="app-shell"><StickyBreadcrumb items={[{label:"TREF"}]} menuButton/><header className="topbar"><div><p className="eyebrow">Εργοταξιακό App</p><h1>Έργα</h1><p className="subtitle">Dashboard έργων με modules ανά έργο.</p></div><div className="header-actions"><button className="secondary-btn" onClick={onSettings}><Settings size={18}/> Διαχείριση</button><div className="more-wrap"><button className="icon-btn" onClick={()=>setMenu(!menu)}><MoreVertical size={20}/></button>{menu&&<div className="more-menu"><button onClick={()=>{setShowNew(true);setMenu(false)}}><Plus size={16}/> Προσθήκη έργου</button><button onClick={onSettings}><Settings size={16}/> Διαχείριση</button></div>}</div></div></header>
  <nav className="taskbar">{["all","Σε εξέλιξη","Επείγον","Αναμονή"].map(x=><button key={x} className={filter===x?"active":""} onClick={()=>setFilter(x)}>{x==="all"?"Όλα":x}</button>)}<button onClick={onCalendar}>Ημερολόγιο</button><button onClick={onWarehouse}>Αποθήκη</button><button onClick={onTools}>Εργαλεία</button></nav>
  <section className="stats-grid"><Stat label="Σε εξέλιξη" value={stats.active}/><Stat label="Επείγοντα" value={stats.urgent}/><Stat label="Σε αναμονή" value={stats.waiting}/><Stat label="Όλα τα έργα" value={stats.total}/></section>
@@ -784,7 +826,6 @@ function SettingsPage({settings,setSettings,route,onRoute,onBack}){
   <VersionBadge/>
  </div>
 }
-
 
 function PlanSlotsSettings({settings,setSettings}){
   const slots=settings.planSlots||defaultPlanSlots;

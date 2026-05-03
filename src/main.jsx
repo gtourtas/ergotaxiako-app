@@ -6,7 +6,7 @@ import { createWorker } from "tesseract.js";
 import versionInfo from "./version.json";
 import "./style.css";
 
-const STORAGE_KEY="ergotaxiako_app_v27";
+const STORAGE_KEY="ergotaxiako_app_v29";
 
 const stages=["Αποξηλώσεις","Ηλεκτρολόγος","Υδραυλικός","Γκρο μπετά","Πλακάκια μπάνιου","Κουζίνα","Διακόπτες","Φωτιστικά","Τελικό βάψιμο","Παράδοση έργου"];
 const switchCats=["Πρίζες","Διακόπτες","DATA / TV","Πλαίσια","Πλακίδια","Ειδικά"];
@@ -154,7 +154,7 @@ function makeDeliveryNumber(existing=[]){
 
 function loadState(){
  try{
-  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v26")||localStorage.getItem("ergotaxiako_app_v24")||localStorage.getItem("ergotaxiako_app_v23")||localStorage.getItem("ergotaxiako_app_v22")||localStorage.getItem("ergotaxiako_app_v21")||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
+  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v28")||localStorage.getItem("ergotaxiako_app_v27")||localStorage.getItem("ergotaxiako_app_v26")||localStorage.getItem("ergotaxiako_app_v24")||localStorage.getItem("ergotaxiako_app_v23")||localStorage.getItem("ergotaxiako_app_v22")||localStorage.getItem("ergotaxiako_app_v21")||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
   if(!raw)return{projects:defaultProjects,settings:{...defaultSettings,warehouse:defaultWarehouse}};
   const p=JSON.parse(raw);
   const loadedProjects=(p.projects?.length?p.projects:defaultProjects).map(pr=>({...pr,accounts:pr.accounts||[],schedule:pr.schedule||[],switchMaterials:pr.switchMaterials||[],warehouseMaterials:pr.warehouseMaterials||[],plans:pr.plans||[],orderSlips:pr.orderSlips||[]}));
@@ -224,14 +224,51 @@ function App(){
  const selected=projects.find(p=>p.id===view.projectId);
  function updateProject(id,patch){setProjects(projects.map(p=>p.id===id?{...p,...patch}:p))}
  function addProject(p){const n={...p,id:Date.now(),accounts:[],schedule:[],switchMaterials:[],warehouseMaterials:[],plans:[],orderSlips:[]};setProjects([n,...projects]);setShowNew(false);setView({type:"project",projectId:n.id,tab:"general"})}
- if(view.type==="tools")return <ToolsPage settings={settings} setSettings={setSettings} projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})}/>;
- if(view.type==="warehouse")return <WarehousePage settings={settings} setSettings={setSettings} projects={projects} setProjects={setProjects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"warehouseMaterials"})}/>;
- if(view.type==="calendar")return <HomeCalendarPage projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"accounts"})}/>;
- if(view.type==="settings")return <SettingsPage settings={settings} setSettings={setSettings} route={view.section||"index"} onRoute={s=>setView({type:"settings",section:s})} onBack={()=>setView({type:"home"})}/>;
- if(view.type==="project"&&selected)return <ProjectPage projects={projects} project={selected} settings={settings} tab={view.tab||"general"} onBack={()=>setView({type:"home"})} onProjectOpen={(projectId)=>setView({type:"project",projectId,tab:"general"})} onTab={tab=>setView({type:"project",projectId:selected.id,tab})} onUpdate={p=>updateProject(selected.id,p)} onDelete={()=>{if(confirmDelete("Να διαγραφεί οριστικά το έργο;")){setProjects(projects.filter(p=>p.id!==selected.id));setView({type:"home"})}}}/>;
- return <HomePage projects={projects} settings={settings} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} onOpen={id=>setView({type:"project",projectId:id,tab:"general"})} onSettings={()=>setView({type:"settings",section:"index"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} showNew={showNew} setShowNew={setShowNew} onAdd={addProject}/>;
+ if(view.type==="tools")return <AppLayout projects={projects} current="tools" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><ToolsPage settings={settings} setSettings={setSettings} projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})}/></AppLayout>;
+ if(view.type==="warehouse")return <AppLayout projects={projects} current="warehouse" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><WarehousePage settings={settings} setSettings={setSettings} projects={projects} setProjects={setProjects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"warehouseMaterials"})}/></AppLayout>;
+ if(view.type==="calendar")return <AppLayout projects={projects} current="calendar" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><HomeCalendarPage projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"accounts"})}/></AppLayout>;
+ if(view.type==="settings")return <AppLayout projects={projects} current="settings" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><SettingsPage settings={settings} setSettings={setSettings} route={view.section||"index"} onRoute={s=>setView({type:"settings",section:s})} onBack={()=>setView({type:"home"})}/></AppLayout>;
+ if(view.type==="project"&&selected)return <AppLayout projects={projects} activeProjectId={selected.id} current="project" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><ProjectPage projects={projects} project={selected} settings={settings} tab={view.tab||"general"} onBack={()=>setView({type:"home"})} onProjectOpen={(projectId)=>setView({type:"project",projectId,tab:"general"})} onTab={tab=>setView({type:"project",projectId:selected.id,tab})} onUpdate={p=>updateProject(selected.id,p)} onDelete={()=>{if(confirmDelete("Να διαγραφεί οριστικά το έργο;")){setProjects(projects.filter(p=>p.id!==selected.id));setView({type:"home"})}}}/></AppLayout>;
+ return <AppLayout projects={projects} current="home" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><HomePage projects={projects} settings={settings} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} onOpen={id=>setView({type:"project",projectId:id,tab:"general"})} onSettings={()=>setView({type:"settings",section:"index"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} showNew={showNew} setShowNew={setShowNew} onAdd={addProject}/></AppLayout>;
 }
 
+
+
+function GlobalSidebar({projects=[],activeProjectId,onHome,onOpenProject,onCalendar,onWarehouse,onTools,onSettings,current="home"}){
+  return <aside className="global-sidebar">
+    <div className="global-brand" onClick={onHome}>
+      <span>TREF</span>
+      <small>Εργοταξιακό App</small>
+    </div>
+
+    <nav className="global-main-nav">
+      <button className={current==="home"?"active":""} onClick={onHome}><Home size={17}/> Αρχική</button>
+      <button className={current==="calendar"?"active":""} onClick={onCalendar}><CalendarDays size={17}/> Ημερολόγιο</button>
+      <button className={current==="warehouse"?"active":""} onClick={onWarehouse}><Package size={17}/> Αποθήκη</button>
+      <button className={current==="tools"?"active":""} onClick={onTools}><Wrench size={17}/> Εργαλεία</button>
+      <button className={current==="settings"?"active":""} onClick={onSettings}><Settings size={17}/> Διαχείριση</button>
+    </nav>
+
+    <div className="global-projects">
+      <p>Έργα</p>
+      <div className="global-project-list">
+        {projects.length===0 ? <span className="global-empty">Δεν υπάρχουν έργα</span> :
+          projects.map(project=><button key={project.id} className={project.id===activeProjectId?"active":""} onClick={()=>onOpenProject(project.id)}>
+            <Building2 size={15}/>
+            <span>{project.name}</span>
+          </button>)
+        }
+      </div>
+    </div>
+  </aside>
+}
+
+function AppLayout({children,projects,activeProjectId,current,onHome,onOpenProject,onCalendar,onWarehouse,onTools,onSettings}){
+  return <div className="global-layout">
+    <GlobalSidebar projects={projects} activeProjectId={activeProjectId} current={current} onHome={onHome} onOpenProject={onOpenProject} onCalendar={onCalendar} onWarehouse={onWarehouse} onTools={onTools} onSettings={onSettings}/>
+    <main className="global-content">{children}</main>
+  </div>
+}
 
 function StickyBreadcrumb({items=[], menuButton=false}){
   return <div className="sticky-breadcrumb-wrap">
@@ -424,18 +461,46 @@ function GeneralTab({project,settings,onUpdate}){return <section className="deta
 function AccountsTab({project,settings,onUpdate}){
  const allFields=mergeAccountFields(settings.accountFields);const fields=allFields.filter(f=>f.enabled!==false);const initial=Object.fromEntries(allFields.map(f=>[f.key,f.key==="status"?"Εκκρεμεί":""]));
  const empty={...initial,provider:"ΔΕΗ",status:"Εκκρεμεί",billingCycleDays:initial.billingCycleDays||"30"};
- const[form,setForm]=useState(empty),[mode,setMode]=useState("list"),[selectedId,setSelectedId]=useState(null),[open,setOpen]=useState({}),[ocrStatus,setOcrStatus]=useState(""),[ocrText,setOcrText]=useState(""),[preview,setPreview]=useState(""),[reading,setReading]=useState(false),[calProvider,setCalProvider]=useState("Όλοι");
+ const[form,setForm]=useState(empty),[mode,setMode]=useState("list"),[selectedId,setSelectedId]=useState(null),[open,setOpen]=useState({}),[ocrStatus,setOcrStatus]=useState(""),[ocrText,setOcrText]=useState(""),[preview,setPreview]=useState(""),[attachment,setAttachment]=useState(null),[reading,setReading]=useState(false),[calProvider,setCalProvider]=useState("Όλοι");
  const accounts=project.accounts||[],selected=accounts.find(a=>a.id===selectedId);const providers=["ΔΕΗ","ΕΥΑΘ","Φυσικό Αέριο","Κοινόχρηστα"];const grouped=accounts.reduce((a,b)=>{const p=normalizeProviderName(b.provider);(a[p]||(a[p]=[])).push(b);return a},{});
  providers.forEach(p=>grouped[p]||(grouped[p]=[]));const providerNames=[...providers,...Object.keys(grouped).filter(p=>!providers.includes(p))];const total=accounts.reduce((s,a)=>s+(Number(a.amount)||0),0);
  const events=getBillEvents(accounts).filter(e=>calProvider==="Όλοι"||e.provider===calProvider);const upcoming=events.filter(e=>e.days>=0).slice(0,8),overdue=events.filter(e=>e.type==="due"&&e.days<0);
- function openBill(id){const a=accounts.find(x=>x.id===id);if(!a)return;setSelectedId(id);setForm({...empty,...a});setMode("view")}
- function startNew(){setForm(empty);setSelectedId(null);setOcrStatus("");setOcrText("");setPreview("");setMode("edit")}
- function save(){if(!form.provider&&!form.amount&&!form.paymentCode)return;if(selectedId){onUpdate({accounts:accounts.map(a=>a.id===selectedId?{...a,...form,amount:Number(form.amount)||0}:a)});setMode("view")}else{const n={id:Date.now(),...form,amount:Number(form.amount)||0};onUpdate({accounts:[n,...accounts]});setSelectedId(n.id);setForm({...empty,...n});setMode("view")}}
+ function openBill(id){const a=accounts.find(x=>x.id===id);if(!a)return;setSelectedId(id);setForm({...empty,...a});setAttachment(a.attachment||null);setMode("view")}
+ function startNew(){setForm(empty);setSelectedId(null);setOcrStatus("");setOcrText("");setPreview("");setAttachment(null);setMode("edit")}
+ function save(){if(!form.provider&&!form.amount&&!form.paymentCode)return;if(selectedId){onUpdate({accounts:accounts.map(a=>a.id===selectedId?{...a,...form,attachment,amount:Number(form.amount)||0}:a)});setMode("view")}else{const n={id:Date.now(),...form,attachment,amount:Number(form.amount)||0};onUpdate({accounts:[n,...accounts]});setSelectedId(n.id);setForm({...empty,...n});setMode("view")}}
  function updateAccount(id,patch){onUpdate({accounts:accounts.map(a=>a.id===id?{...a,...patch}:a)});if(id===selectedId)setForm({...form,...patch})}
  function del(id){if(!confirmDelete("Να διαγραφεί οριστικά ο λογαριασμός;"))return;onUpdate({accounts:accounts.filter(a=>a.id!==id)});setMode("list")}
- async function upload(e){const file=e.target.files?.[0];if(!file)return;setReading(true);setOcrStatus(file.type==="application/pdf"?"Το PDF ανέβηκε. Συμπλήρωσε τα πεδία ή άνοιξε το αρχείο για έλεγχο.":"Ανάγνωση φωτογραφίας...");setPreview(URL.createObjectURL(file));if(file.type==="application/pdf"){setReading(false);setOcrText(`PDF αρχείο: ${file.name}`);return;}try{const worker=await createWorker("ell+eng");const result=await worker.recognize(file);await worker.terminate();const text=result?.data?.text||"";setOcrText(text);setForm(p=>({...p,...parseGreekBillText(text,allFields)}));setOcrStatus("Ολοκληρώθηκε. Έλεγξε τα πεδία πριν αποθήκευση.")}catch(err){setOcrStatus("Δεν ολοκληρώθηκε η ανάγνωση.")}finally{setReading(false)}}
- if(mode==="edit")return <section className="bill-detail-page"><div className="local-route"><button onClick={()=>setMode("list")}>Λογαριασμοί</button><span>/</span><strong>{selectedId?"Επεξεργασία λογαριασμού":"Νέος λογαριασμός"}</strong></div><div className="bill-detail-head"><div><button className="text-back-btn" onClick={()=>setMode("list")}>← Λογαριασμοί</button><h2>{selectedId?"Επεξεργασία λογαριασμού":"Νέος λογαριασμός"}</h2></div><button className="secondary-btn" onClick={()=>setMode("list")}>Άκυρο</button></div><div className="ocr-panel"><div><h3>Προσθήκη από φωτογραφία</h3><p>Το OCR χρησιμοποιεί τις λέξεις που έχεις ορίσει στη Διαχείριση.</p></div><label className="upload-btn">📷 Ανέβασε φωτογραφία<input type="file" accept="image/*,application/pdf" capture="environment" onChange={upload}/></label></div>{ocrStatus&&<div className={`ocr-status ${reading?"loading":""}`}>{ocrStatus}</div>}{preview&&<img className="ocr-preview" src={preview}/>} {ocrText&&<details className="ocr-text"><summary>Προβολή OCR κειμένου</summary><pre>{ocrText}</pre></details>}<div className="bill-edit-card"><div className="account-form">{fields.map(f=>f.type==="textarea"?<TextArea key={f.key} label={f.label} value={form[f.key]||""} onChange={v=>setForm({...form,[f.key]:v})}/>:f.type==="select"?<Select key={f.key} label={f.label} value={form[f.key]||""} options={f.options||[]} onChange={v=>setForm({...form,[f.key]:v})}/>:<Field key={f.key} label={f.label} type={f.type} value={form[f.key]||""} onChange={v=>setForm({...form,[f.key]:v})}/>)}</div><button className="primary-btn" onClick={save}>Αποθήκευση λογαριασμού</button></div></section>
- if(mode==="view"&&selected)return <section className="bill-detail-page"><div className="local-route"><button onClick={()=>setMode("list")}>Λογαριασμοί</button><span>/</span><strong>{normalizeProviderName(selected.provider)}</strong></div><div className="bill-detail-head"><div><button className="text-back-btn" onClick={()=>setMode("list")}>← Λογαριασμοί</button><h2>{normalizeProviderName(selected.provider)} · {formatEuro(selected.amount)}</h2><p className="subtitle">{getBillKind(selected)} {selected.dueDate?`· Εξόφληση: ${formatGreekDate(selected.dueDate)}`:""}</p></div><div className="bill-detail-actions"><button className="secondary-btn" onClick={()=>setMode("edit")}>Επεξεργασία</button><button className="danger-btn" onClick={()=>del(selected.id)}>Διαγραφή λογαριασμού</button></div></div><div className="bill-detail-card"><div className="account-details-grid bill-detail-grid">{fields.map(f=><div className="account-detail" key={f.key}><span>{f.label}</span><p>{f.key==="amount"?formatEuro(selected[f.key]):f.type==="date"?formatGreekDate(selected[f.key]):selected[f.key]||"—"}</p></div>)}</div></div></section>
+ async function upload(e){
+ const file=e.target.files?.[0];
+ if(!file)return;
+ const dataUrl=await readFileAsDataUrl(file);
+ const uploaded={name:file.name,type:file.type,size:file.size,dataUrl,uploadedAt:new Date().toISOString().slice(0,10)};
+ setAttachment(uploaded);
+ setPreview(dataUrl);
+ setOcrText("");
+ if(file.type==="application/pdf"){
+   setReading(false);
+   setOcrStatus("Το PDF ανέβηκε και θα αποθηκευτεί μαζί με τον λογαριασμό. Για OCR χρησιμοποίησε προς το παρόν φωτογραφία.");
+   return;
+ }
+ setReading(true);
+ setOcrStatus("Ανάγνωση φωτογραφίας...");
+ try{
+   const worker=await createWorker("ell+eng");
+   const result=await worker.recognize(file);
+   await worker.terminate();
+   const text=result?.data?.text||"";
+   setOcrText(text);
+   setForm(p=>({...p,...parseGreekBillText(text,allFields)}));
+   setOcrStatus("Ολοκληρώθηκε. Έλεγξε τα πεδία πριν αποθήκευση.");
+ }catch(err){
+   setOcrStatus("Δεν ολοκληρώθηκε η ανάγνωση.");
+ }finally{
+   setReading(false);
+ }
+}
+ if(mode==="edit")return <section className="bill-detail-page"><div className="local-route"><button onClick={()=>setMode("list")}>Λογαριασμοί</button><span>/</span><strong>{selectedId?"Επεξεργασία λογαριασμού":"Νέος λογαριασμός"}</strong></div><div className="bill-detail-head"><div><button className="text-back-btn" onClick={()=>setMode("list")}>← Λογαριασμοί</button><h2>{selectedId?"Επεξεργασία λογαριασμού":"Νέος λογαριασμός"}</h2></div><button className="secondary-btn" onClick={()=>setMode("list")}>Άκυρο</button></div><div className="ocr-panel"><div><h3>Προσθήκη από φωτογραφία ή PDF</h3><p>Το OCR λειτουργεί σε φωτογραφίες. Τα PDF αποθηκεύονται ως συνημμένα στον λογαριασμό.</p></div><label className="upload-btn">📎 Ανέβασε φωτογραφία ή PDF<input type="file" accept="image/*,application/pdf" capture="environment" onChange={upload}/></label></div>{ocrStatus&&<div className={`ocr-status ${reading?"loading":""}`}>{ocrStatus}</div>}{attachment&&<div className="attachment-card"><div><strong>{attachment.name}</strong><p>{attachment.type==="application/pdf"?"PDF αρχείο":"Εικόνα"} · {formatGreekDate(attachment.uploadedAt)}</p></div><a href={attachment.dataUrl} target="_blank" rel="noreferrer">{attachment.type==="application/pdf"?"Άνοιγμα PDF":"Άνοιγμα αρχείου"}</a></div>}{preview&&attachment?.type!=="application/pdf"&&<img className="ocr-preview" src={preview}/>} {ocrText&&<details className="ocr-text"><summary>Προβολή OCR κειμένου</summary><pre>{ocrText}</pre></details>}<div className="bill-edit-card"><div className="account-form">{fields.map(f=>f.type==="textarea"?<TextArea key={f.key} label={f.label} value={form[f.key]||""} onChange={v=>setForm({...form,[f.key]:v})}/>:f.type==="select"?<Select key={f.key} label={f.label} value={form[f.key]||""} options={f.options||[]} onChange={v=>setForm({...form,[f.key]:v})}/>:<Field key={f.key} label={f.label} type={f.type} value={form[f.key]||""} onChange={v=>setForm({...form,[f.key]:v})}/>)}</div><button className="primary-btn" onClick={save}>Αποθήκευση λογαριασμού</button></div></section>
+ if(mode==="view"&&selected)return <section className="bill-detail-page"><div className="local-route"><button onClick={()=>setMode("list")}>Λογαριασμοί</button><span>/</span><strong>{normalizeProviderName(selected.provider)}</strong></div><div className="bill-detail-head"><div><button className="text-back-btn" onClick={()=>setMode("list")}>← Λογαριασμοί</button><h2>{normalizeProviderName(selected.provider)} · {formatEuro(selected.amount)}</h2><p className="subtitle">{getBillKind(selected)} {selected.dueDate?`· Εξόφληση: ${formatGreekDate(selected.dueDate)}`:""}</p></div><div className="bill-detail-actions"><button className="secondary-btn" onClick={()=>setMode("edit")}>Επεξεργασία</button><button className="danger-btn" onClick={()=>del(selected.id)}>Διαγραφή λογαριασμού</button></div></div>{selected.attachment&&<div className="attachment-card bill-attachment"><div><strong>{selected.attachment.name}</strong><p>{selected.attachment.type==="application/pdf"?"PDF αρχείο":"Εικόνα"} · {formatGreekDate(selected.attachment.uploadedAt)}</p></div><a href={selected.attachment.dataUrl} target="_blank" rel="noreferrer">{selected.attachment.type==="application/pdf"?"Άνοιγμα PDF":"Άνοιγμα αρχείου"}</a></div>}<div className="bill-detail-card"><div className="account-details-grid bill-detail-grid">{fields.map(f=><div className="account-detail" key={f.key}><span>{f.label}</span><p>{f.key==="amount"?formatEuro(selected[f.key]):f.type==="date"?formatGreekDate(selected[f.key]):selected[f.key]||"—"}</p></div>)}</div></div></section>
  return <section className="bills-home"><div className="bills-main-card"><div className="bills-title-row"><h2>Λογαριασμοί</h2><button className="bill-plus-btn elegant" onClick={startNew}>+</button></div><div className="bill-calendar-card"><div className="bill-calendar-head"><div><h3>Ημερολόγιο λογαριασμών</h3><p>Λήξεις πληρωμής και αναμενόμενες εκδόσεις επόμενων λογαριασμών.</p></div><select value={calProvider} onChange={e=>setCalProvider(e.target.value)}>{["Όλοι",...providerNames].map(p=><option key={p}>{p}</option>)}</select></div><div className="calendar-alerts"><div className="calendar-alert overdue"><strong>{overdue.length}</strong><span>ληξιπρόθεσμα</span></div><div className="calendar-alert upcoming"><strong>{upcoming.length}</strong><span>προσεχή</span></div></div><div className="calendar-events">{events.length===0?<div className="empty-state">Δεν υπάρχουν ακόμη ημερομηνίες λογαριασμών.</div>:events.slice(0,12).map(e=><button className={`calendar-event ${e.type} ${e.days<0?"late":""}`} key={e.id} onClick={()=>openBill(e.accountId)}><span className="event-date">{formatGreekDate(e.date)}</span><span className="event-title">{e.title}</span><span className="event-subtitle">{e.subtitle}</span><span className="event-days">{e.days===0?"σήμερα":e.days>0?`σε ${e.days}ημ.`:`${Math.abs(e.days)}ημ. πριν`}</span></button>)}</div></div><div className="bill-accordion-list">{providerNames.map(p=>{const rows=grouped[p]||[],pt=rows.reduce((s,a)=>s+(Number(a.amount)||0),0);return <div className="bill-accordion" key={p}><button className="bill-accordion-head" onClick={()=>setOpen({...open,[p]:!open[p]})}><span>{open[p]?"⌄":"›"} {p}</span><strong>Σύνολο: {formatEuro(pt)}</strong></button>{open[p]&&<div className="bill-table-wrap"><table className="bill-table"><thead><tr><th>Κατηγορία Λογαριασμού</th><th>Ημερομηνία Έκδοσης</th><th>Περίοδος Κατανάλωσης Από-Έως</th><th>Είδος λογαριασμού</th><th>Ποσό</th><th>Υπόλοιπο</th><th></th></tr></thead><tbody>{rows.length===0&&<tr><td colSpan="7" className="empty-row">Δεν υπάρχουν λογαριασμοί.</td></tr>}{rows.map(a=><tr key={a.id} className="clickable-bill-row" onClick={()=>openBill(a.id)}><td>{normalizeProviderName(a.provider)}</td><td>{formatGreekDate(a.issueDate)}</td><td>{getBillPeriod(a)}</td><td>{getBillKind(a)}</td><td className="amount-cell">{formatEuro(a.amount)}</td><td className="paid-cell">{a.status==="Πληρώθηκε"?"✓":""}</td><td className="row-tools" onClick={ev=>ev.stopPropagation()}><select value={a.status||"Εκκρεμεί"} onChange={ev=>updateAccount(a.id,{status:ev.target.value})}><option>Εκκρεμεί</option><option>Πληρώθηκε</option></select><button onClick={()=>del(a.id)}>×</button></td></tr>)}<tr className="provider-total-row"><td colSpan="4"></td><td>Σύνολο: {formatEuro(pt)}</td><td></td><td></td></tr></tbody></table></div>}</div>})}</div></div><div className="bills-bottom-total rounded">Σύνολο: {formatEuro(total)}</div></section>
 }
 

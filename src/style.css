@@ -517,3 +517,195 @@
   .plan-card,.tool-card{display:grid}
   .plan-actions,.tool-actions{justify-content:flex-start;flex-wrap:wrap}
 }
+
+
+/* v28 global sidebar */
+.global-layout{
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  min-height:100vh;
+  background:#f6f8fb;
+}
+.global-sidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow:auto;
+  background:#0f172a;
+  color:white;
+  padding:18px 14px;
+  border-right:1px solid rgba(255,255,255,.08);
+  z-index:100;
+}
+.global-content{
+  min-width:0;
+}
+.global-brand{
+  padding:14px 12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+  margin-bottom:14px;
+  cursor:pointer;
+}
+.global-brand span{
+  display:block;
+  font-size:26px;
+  font-weight:950;
+  letter-spacing:-.05em;
+}
+.global-brand small{
+  display:block;
+  color:#94a3b8;
+  margin-top:4px;
+  font-weight:800;
+}
+.global-main-nav{
+  display:grid;
+  gap:6px;
+  margin-bottom:18px;
+}
+.global-main-nav button,
+.global-project-list button{
+  width:100%;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:#cbd5e1;
+  padding:11px 12px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+  font-weight:850;
+}
+.global-main-nav button:hover,
+.global-main-nav button.active,
+.global-project-list button:hover,
+.global-project-list button.active{
+  background:white;
+  color:#0f172a;
+}
+.global-projects{
+  border-top:1px solid rgba(255,255,255,.12);
+  padding-top:14px;
+}
+.global-projects p{
+  margin:0 0 8px;
+  color:#94a3b8;
+  font-size:12px;
+  font-weight:950;
+  text-transform:uppercase;
+}
+.global-project-list{
+  display:grid;
+  gap:5px;
+}
+.global-project-list button span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.global-empty{
+  color:#94a3b8;
+  font-size:13px;
+  padding:8px 12px;
+}
+.global-layout .app-shell{
+  max-width:1380px;
+}
+.global-layout .project-layout{
+  grid-template-columns:260px 1fr;
+}
+.global-layout .sidebar-projects{
+  display:none;
+}
+@media(max-width:980px){
+  .global-layout{
+    grid-template-columns:1fr;
+  }
+  .global-sidebar{
+    position:sticky;
+    top:0;
+    height:auto;
+    max-height:48vh;
+    padding:10px;
+  }
+  .global-brand{
+    padding:8px 10px 10px;
+    margin-bottom:8px;
+  }
+  .global-brand span{
+    font-size:22px;
+  }
+  .global-main-nav{
+    display:flex;
+    overflow-x:auto;
+    gap:6px;
+    padding-bottom:4px;
+  }
+  .global-main-nav button{
+    width:auto;
+    white-space:nowrap;
+  }
+  .global-projects{
+    padding-top:8px;
+  }
+  .global-project-list{
+    display:flex;
+    overflow-x:auto;
+    gap:6px;
+    padding-bottom:4px;
+  }
+  .global-project-list button{
+    width:auto;
+    min-width:max-content;
+  }
+  .global-layout .project-layout{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* v29 account PDF attachment */
+.attachment-card{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  border-radius:16px;
+  padding:14px;
+  margin:12px 0;
+}
+.attachment-card strong{
+  display:block;
+  color:#0f172a;
+}
+.attachment-card p{
+  margin:4px 0 0;
+  color:#64748b;
+  font-weight:700;
+}
+.attachment-card a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:#0f172a;
+  color:white;
+  text-decoration:none;
+  font-weight:900;
+  padding:10px 12px;
+  white-space:nowrap;
+}
+.bill-attachment{
+  margin-bottom:16px;
+}
+@media(max-width:980px){
+  .attachment-card{
+    display:grid;
+  }
+  .attachment-card a{
+    width:100%;
+  }
+}

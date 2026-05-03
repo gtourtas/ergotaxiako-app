@@ -1,1 +1,7 @@
-{"version":"v12","packageVersion":"12.0.0","commit":"local","branch":"local","builtAt":"local"}
+{
+  "version": "v13",
+  "packageVersion": "13.0.0",
+  "commit": "local",
+  "branch": "local",
+  "builtAt": "local"
+}

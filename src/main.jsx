@@ -9,7 +9,7 @@ import versionInfo from "./version.json";
 import "./style.css";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-const STORAGE_KEY="ergotaxiako_app_v32";
+const STORAGE_KEY="ergotaxiako_app_v33";
 
 const stages=["Αποξηλώσεις","Ηλεκτρολόγος","Υδραυλικός","Γκρο μπετά","Πλακάκια μπάνιου","Κουζίνα","Διακόπτες","Φωτιστικά","Τελικό βάψιμο","Παράδοση έργου"];
 const switchCats=["Πρίζες","Διακόπτες","DATA / TV","Πλαίσια","Πλακίδια","Ειδικά"];
@@ -176,7 +176,7 @@ function makeDeliveryNumber(existing=[]){
 
 function loadState(){
  try{
-  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v31")||localStorage.getItem("ergotaxiako_app_v30")||localStorage.getItem("ergotaxiako_app_v29")||localStorage.getItem("ergotaxiako_app_v28")||localStorage.getItem("ergotaxiako_app_v27")||localStorage.getItem("ergotaxiako_app_v26")||localStorage.getItem("ergotaxiako_app_v24")||localStorage.getItem("ergotaxiako_app_v23")||localStorage.getItem("ergotaxiako_app_v22")||localStorage.getItem("ergotaxiako_app_v21")||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
+  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v32")||localStorage.getItem("ergotaxiako_app_v31")||localStorage.getItem("ergotaxiako_app_v30")||localStorage.getItem("ergotaxiako_app_v29")||localStorage.getItem("ergotaxiako_app_v28")||localStorage.getItem("ergotaxiako_app_v27")||localStorage.getItem("ergotaxiako_app_v26")||localStorage.getItem("ergotaxiako_app_v24")||localStorage.getItem("ergotaxiako_app_v23")||localStorage.getItem("ergotaxiako_app_v22")||localStorage.getItem("ergotaxiako_app_v21")||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
   if(!raw)return{projects:defaultProjects,settings:{...defaultSettings,warehouse:defaultWarehouse}};
   const p=JSON.parse(raw);
   const loadedProjects=(p.projects?.length?p.projects:defaultProjects).map(pr=>({...pr,accounts:pr.accounts||[],schedule:pr.schedule||[],switchMaterials:pr.switchMaterials||[],warehouseMaterials:pr.warehouseMaterials||[],plans:pr.plans||[],orderSlips:pr.orderSlips||[],requests:pr.requests||[]}));
@@ -239,11 +239,13 @@ function App(){
  const[projects,setProjects]=useState(init.projects);
  const[settings,setSettings]=useState(init.settings);
  const[view,setView]=useState({type:"home"});
+ const[unlocked,setUnlocked]=useState(()=>sessionStorage.getItem("ergotaxiako_unlocked")==="1");
  const[query,setQuery]=useState("");
  const[filter,setFilter]=useState("all");
  const[showNew,setShowNew]=useState(false);
  useEffect(()=>localStorage.setItem(STORAGE_KEY,JSON.stringify({projects,settings})),[projects,settings]);
  const selected=projects.find(p=>p.id===view.projectId);
+ if(!unlocked)return <LoginGate onUnlock={()=>setUnlocked(true)}/>;
  function updateProject(id,patch){setProjects(projects.map(p=>p.id===id?{...p,...patch}:p))}
  function addProject(p){const title=(p.address||p.name||"Νέο έργο").trim();const n={...p,name:title,address:p.address||title,id:Date.now(),accounts:[],schedule:[],switchMaterials:[],warehouseMaterials:[],plans:[],orderSlips:[],requests:[]};setProjects([n,...projects]);setShowNew(false);setView({type:"project",projectId:n.id,tab:"general"})}
  if(view.type==="tools")return <AppLayout projects={projects} current="tools" onHome={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})} onCalendar={()=>setView({type:"calendar"})} onWarehouse={()=>setView({type:"warehouse"})} onTools={()=>setView({type:"tools"})} onSettings={()=>setView({type:"settings",section:"index"})}><ToolsPage settings={settings} setSettings={setSettings} projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"general"})}/></AppLayout>;
@@ -255,6 +257,34 @@ function App(){
 }
 
 
+
+
+const APP_ACCESS_CODE = "1234";
+
+function LoginGate({onUnlock}){
+  const[code,setCode]=useState("");
+  const[error,setError]=useState("");
+  function submit(e){
+    e.preventDefault();
+    if(code===APP_ACCESS_CODE){
+      sessionStorage.setItem("ergotaxiako_unlocked","1");
+      onUnlock();
+    }else{
+      setError("Λάθος κωδικός πρόσβασης.");
+    }
+  }
+  return <div className="login-page">
+    <form className="login-card" onSubmit={submit}>
+      <div className="login-logo">TREF</div>
+      <h1>Είσοδος εφαρμογής</h1>
+      <p>Πληκτρολόγησε τον κωδικό πρόσβασης για να συνεχίσεις.</p>
+      <input type="password" value={code} onChange={e=>setCode(e.target.value)} placeholder="Κωδικός πρόσβασης" autoFocus/>
+      {error&&<div className="login-error">{error}</div>}
+      <button type="submit" className="primary-btn">Είσοδος</button>
+      <small>Προσωρινός κωδικός: 1234</small>
+    </form>
+  </div>
+}
 
 function GlobalSidebar({projects=[],activeProjectId,onHome,onOpenProject,onCalendar,onWarehouse,onTools,onSettings,current="home"}){
   return <aside className="global-sidebar">
@@ -313,7 +343,7 @@ function HomePage({projects,settings,query,setQuery,filter,setFilter,onOpen,onSe
  const[form,setForm]=useState({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""});
  const stats={total:projects.length,active:projects.filter(p=>p.status==="Σε εξέλιξη").length,urgent:projects.filter(p=>p.status==="Επείγον").length,waiting:projects.filter(p=>p.status==="Αναμονή").length};
  const filtered=projects.filter(p=>(filter==="all"||p.status===filter)&&`${p.name} ${p.address} ${p.stage}`.toLowerCase().includes(query.toLowerCase()));
- function submit(){if(!form.address.trim())return;onAdd({...form,name:form.address,deliveryDate:form.deliveryDate||"Δεν ορίστηκε"});setForm({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""})}
+ function submit(){if(!form.address.trim())return;onAdd({...form,name:form.address.trim(),deliveryDate:form.deliveryDate||"Δεν ορίστηκε"});setForm({address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""})}
  return <div className="app-shell"><StickyBreadcrumb items={[{label:"TREF"}]} menuButton/><header className="topbar"><div><p className="eyebrow">Εργοταξιακό App</p><h1>Έργα</h1><p className="subtitle">Dashboard έργων με modules ανά έργο.</p></div><div className="header-actions"><button className="secondary-btn" onClick={onSettings}><Settings size={18}/> Διαχείριση</button><div className="more-wrap"><button className="icon-btn" onClick={()=>setMenu(!menu)}><MoreVertical size={20}/></button>{menu&&<div className="more-menu"><button onClick={()=>{setShowNew(true);setMenu(false)}}><Plus size={16}/> Προσθήκη έργου</button><button onClick={onSettings}><Settings size={16}/> Διαχείριση</button></div>}</div></div></header>
  <nav className="taskbar">{["all","Σε εξέλιξη","Επείγον","Αναμονή"].map(x=><button key={x} className={filter===x?"active":""} onClick={()=>setFilter(x)}>{x==="all"?"Όλα":x}</button>)}<button onClick={onCalendar}>Ημερολόγιο</button><button onClick={onWarehouse}>Αποθήκη</button><button onClick={onTools}>Εργαλεία</button></nav>
  <section className="stats-grid"><Stat label="Σε εξέλιξη" value={stats.active}/><Stat label="Επείγοντα" value={stats.urgent}/><Stat label="Σε αναμονή" value={stats.waiting}/><Stat label="Όλα τα έργα" value={stats.total}/></section>
@@ -723,18 +753,49 @@ function ProjectWarehouseMaterialsTab({project}){
 function SwitchMaterialsTab({project,settings,onUpdate}){const materials=project.switchMaterials||[],[filter,setFilter]=useState("Όλα");const cats=["Όλα",...(settings.switchMaterialCategories||switchCats)];const visible=filter==="Όλα"?materials:materials.filter(m=>m.category===filter);const r=materials.length?Math.round(materials.filter(m=>m.received).length/materials.length*100):0,i=materials.length?Math.round(materials.filter(m=>m.installed).length/materials.length*100):0;function upd(id,patch){onUpdate({switchMaterials:materials.map(m=>m.id===id?{...m,...patch}:m)})}return <section className="detail-card"><h2><Plug size={22}/> Διακοπτικό Υλικό Έργου</h2><p className="subtitle">Σειρά υλικού: Legrand Valena Life</p><div className="progress-grid"><Progress label="% παραλαβής" value={r}/><Progress label="% τοποθέτησης" value={i}/><div className="progress-card"><p>Εκκρεμή</p><strong>{materials.filter(m=>!m.received||!m.installed).length}</strong></div></div><div className="category-chips">{cats.map(c=><button key={c} className={filter===c?"active":""} onClick={()=>setFilter(c)}>{c}</button>)}</div><div className="materials-list">{visible.map(m=><div className="material-card" key={m.id}><div className="material-top"><div><span className="material-category">{m.category}</span><h3>{m.name}</h3><p>{m.code?`Κωδικός: ${m.code}`:"Χωρίς κωδικό"} · Ποσότητα: {m.qty}</p></div></div><div className="check-row"><label className={m.received?"checked":""}><input type="checkbox" checked={m.received} onChange={e=>upd(m.id,{received:e.target.checked})}/> Παραλαβή</label><label className={m.installed?"checked":""}><input type="checkbox" checked={m.installed} onChange={e=>upd(m.id,{installed:e.target.checked})}/> Τοποθέτηση</label></div><div className="material-edit-grid"><Field label="Χώρος / δωμάτιο" value={m.room||""} onChange={v=>upd(m.id,{room:v})}/><Field label="Παρατηρήσεις" value={m.notes||""} onChange={v=>upd(m.id,{notes:v})}/></div></div>)}</div></section>}
 function Progress({label,value}){return <div className="progress-card"><p>{label}</p><strong>{value}%</strong><div className="progress-track"><div style={{width:`${value}%`}}/></div></div>}
 function StagesTab({stages}){return <section className="detail-card"><h2>Στάδια εργασιών</h2><div className="ordered-stages">{stages.map((s,i)=><div className="ordered-stage" key={s}><span>{i+1}</span><p>{s}</p></div>)}</div></section>}
-function SettingsPage({settings,setSettings,route,onRoute,onBack}){const sections=[["accountFields","Πεδία λογαριασμών"],["planSlots","Θέσεις σχεδίων"],["companyTools","Εργαλεία"],["switchMaterialCategories","Κατηγορίες διακοπτικού υλικού"],["crews","Συνεργεία"],["stages","Στάδια εργασιών"],["statuses","Καταστάσεις έργου"]].sort((a,b)=>a[1].localeCompare(b[1],"el"));if(route!=="index")return <div className="app-shell"><StickyBreadcrumb items={[{label:"TREF",onClick:onBack},{label:"Διαχείριση",onClick:()=>onRoute("index")},{label:sections.find(s=>s[0]===route)?.[1]||""}]} menuButton/><header className="topbar"><div><p className="eyebrow">Διαχείριση</p><h1>{sections.find(s=>s[0]===route)?.[1]}</h1></div><button className="secondary-btn" onClick={()=>onRoute("index")}><ArrowLeft size={18}/> Πίσω</button></header>{route==="accountFields"?<AccountFieldsSettings settings={settings} setSettings={setSettings}/>:<ManageList items={settings[route]||[]} onChange={items=>setSettings({...settings,[route]:items})}/>}<VersionBadge/></div>;return <div className="app-shell"><StickyBreadcrumb items={[{label:"TREF",onClick:onBack},{label:"Διαχείριση"}]} menuButton/><header className="topbar"><div><p className="eyebrow">Ρυθμίσεις</p><h1>Διαχείριση</h1></div><button className="secondary-btn" onClick={onBack}><Home size={18}/> Πίσω</button></header><div className="settings-list">{sections.map(s=><button className="settings-row" key={s[0]} onClick={()=>onRoute(s[0])}><span>{s[1]}</span><small>Άνοιγμα</small></button>)}</div><VersionBadge/></div>}
+function SettingsPage({settings,setSettings,route,onRoute,onBack}){
+ const sections=[
+  ["accountFields","Πεδία λογαριασμών"],
+  ["planSlots","Θέσεις σχεδίων"],
+  ["companyTools","Εργαλεία"],
+  ["switchMaterialCategories","Κατηγορίες διακοπτικού υλικού"],
+  ["crews","Συνεργεία"],
+  ["stages","Στάδια εργασιών"],
+  ["statuses","Καταστάσεις έργου"]
+ ].sort((a,b)=>a[1].localeCompare(b[1],"el"));
+
+ if(route!=="index"){
+  const title=sections.find(s=>s[0]===route)?.[1]||"Διαχείριση";
+  return <div className="app-shell">
+    <StickyBreadcrumb items={[{label:"TREF",onClick:onBack},{label:"Διαχείριση",onClick:()=>onRoute("index")},{label:title}]} menuButton/>
+    <header className="topbar"><div><p className="eyebrow">Διαχείριση</p><h1>{title}</h1></div><button className="secondary-btn" onClick={()=>onRoute("index")}><ArrowLeft size={18}/> Πίσω</button></header>
+    {route==="accountFields" ? <AccountFieldsSettings settings={settings} setSettings={setSettings}/> :
+     route==="planSlots" ? <PlanSlotsSettings settings={settings} setSettings={setSettings}/> :
+     route==="companyTools" ? <CompanyToolsSettings settings={settings} setSettings={setSettings}/> :
+     <ManageList items={settings[route]||[]} onChange={items=>setSettings({...settings,[route]:items})}/>}
+    <VersionBadge/>
+  </div>
+ }
+
+ return <div className="app-shell">
+  <StickyBreadcrumb items={[{label:"TREF",onClick:onBack},{label:"Διαχείριση"}]} menuButton/>
+  <header className="topbar"><div><p className="eyebrow">Ρυθμίσεις</p><h1>Διαχείριση</h1></div><button className="secondary-btn" onClick={onBack}><Home size={18}/> Πίσω</button></header>
+  <div className="settings-list">{sections.map(s=><button className="settings-row" key={s[0]} onClick={()=>onRoute(s[0])}><span>{s[1]}</span><small>Άνοιγμα</small></button>)}</div>
+  <VersionBadge/>
+ </div>
+}
+
 
 function PlanSlotsSettings({settings,setSettings}){
   const slots=settings.planSlots||defaultPlanSlots;
-  const[form,setForm]=useState({name:""});
+  const[name,setName]=useState("");
   function add(){
-    if(!form.name.trim())return;
-    setSettings({...settings,planSlots:[...slots,{id:Date.now(),name:form.name.trim()}]});
-    setForm({name:""});
+    if(!name.trim())return;
+    setSettings({...settings,planSlots:[...slots,{id:Date.now(),name:name.trim()}]});
+    setName("");
   }
-  function update(id,name){
-    setSettings({...settings,planSlots:slots.map(s=>s.id===id?{...s,name}:s)});
+  function update(id,value){
+    setSettings({...settings,planSlots:slots.map(s=>s.id===id?{...s,name:value}:s)});
   }
   function remove(id){
     if(!confirmDelete("Να διαγραφεί η θέση σχεδίων;"))return;
@@ -742,8 +803,8 @@ function PlanSlotsSettings({settings,setSettings}){
   }
   return <section className="detail-card">
     <h2>Θέσεις σχεδίων</h2>
-    <p className="subtitle">Ορισμός θέσεων/κατηγοριών όπου ανεβαίνουν PDF σχέδια μέσα σε κάθε έργο.</p>
-    <div className="inline-add"><input value={form.name} onChange={e=>setForm({name:e.target.value})} placeholder="π.χ. Στατικά σχέδια"/><button className="primary-btn compact" onClick={add}>Προσθήκη</button></div>
+    <p className="subtitle">Ορισμός θέσεων/κατηγοριών για τα PDF σχέδια κάθε έργου.</p>
+    <div className="inline-add"><input value={name} onChange={e=>setName(e.target.value)} placeholder="π.χ. Στατικά σχέδια"/><button className="primary-btn compact" onClick={add}>Προσθήκη</button></div>
     <div className="list-box">{slots.map(slot=><div className="list-row editable-row" key={slot.id}><input value={slot.name} onChange={e=>update(slot.id,e.target.value)}/><button onClick={()=>remove(slot.id)}><Trash2 size={16}/></button></div>)}</div>
   </section>
 }
@@ -756,23 +817,17 @@ function CompanyToolsSettings({settings,setSettings}){
     setSettings({...settings,companyTools:[{id:Date.now(),...form,status:"Αποθήκη",projectId:"",projectName:""},...tools]});
     setForm({name:"",code:"",category:"",notes:""});
   }
-  function update(id,patch){
-    setSettings({...settings,companyTools:tools.map(t=>t.id===id?{...t,...patch}:t)});
-  }
   function remove(id){
     if(!confirmDelete("Να διαγραφεί το εργαλείο;"))return;
     setSettings({...settings,companyTools:tools.filter(t=>t.id!==id)});
   }
   return <section className="detail-card">
     <h2>Εργαλεία</h2>
-    <p className="subtitle">Η προσθήκη νέων εταιρικών εργαλείων γίνεται πλέον από εδώ.</p>
+    <p className="subtitle">Η προσθήκη νέων εταιρικών εργαλείων γίνεται από εδώ.</p>
     <div className="two-col"><Field label="Ονομασία" value={form.name} onChange={v=>setForm({...form,name:v})}/><Field label="Κωδικός" value={form.code} onChange={v=>setForm({...form,code:v})}/><Field label="Κατηγορία" value={form.category} onChange={v=>setForm({...form,category:v})}/></div>
     <TextArea label="Σημειώσεις" value={form.notes} onChange={v=>setForm({...form,notes:v})}/>
     <button className="primary-btn" onClick={add}>Προσθήκη εργαλείου</button>
-    <div className="tools-list">{tools.map(tool=><div className={`tool-card ${tool.status==="Σε έργο"?"away":""}`} key={tool.id}>
-      <div><strong>{tool.name}</strong><p>{tool.code||"χωρίς κωδικό"} · {tool.category||"χωρίς κατηγορία"}</p><small>{tool.status==="Σε έργο"?`Χρεωμένο στο έργο: ${tool.projectName}`:"Στην αποθήκη"}</small></div>
-      <div className="tool-actions"><button className="icon-danger" onClick={()=>remove(tool.id)}><Trash2 size={16}/></button></div>
-    </div>)}</div>
+    <div className="tools-list">{tools.map(tool=><div className={`tool-card ${tool.status==="Σε έργο"?"away":""}`} key={tool.id}><div><strong>{tool.name}</strong><p>{tool.code||"χωρίς κωδικό"} · {tool.category||"χωρίς κατηγορία"}</p><small>{tool.status==="Σε έργο"?`Χρεωμένο στο έργο: ${tool.projectName}`:"Στην αποθήκη"}</small></div><div className="tool-actions"><button className="icon-danger" onClick={()=>remove(tool.id)}><Trash2 size={16}/></button></div></div>)}</div>
   </section>
 }
 

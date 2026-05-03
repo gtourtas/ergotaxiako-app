@@ -6,7 +6,7 @@ import { createWorker } from "tesseract.js";
 import versionInfo from "./version.json";
 import "./style.css";
 
-const STORAGE_KEY="ergotaxiako_app_v20";
+const STORAGE_KEY="ergotaxiako_app_v21";
 
 const stages=["Αποξηλώσεις","Ηλεκτρολόγος","Υδραυλικός","Γκρο μπετά","Πλακάκια μπάνιου","Κουζίνα","Διακόπτες","Φωτιστικά","Τελικό βάψιμο","Παράδοση έργου"];
 const switchCats=["Πρίζες","Διακόπτες","DATA / TV","Πλαίσια","Πλακίδια","Ειδικά"];
@@ -57,7 +57,7 @@ const defaultProjects=[{id:1,name:"Π. Ιωακείμ 14",address:"",stage:"Ηλ
 
 function loadState(){
  try{
-  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
+  const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem("ergotaxiako_app_v20")||localStorage.getItem("ergotaxiako_app_v19")||localStorage.getItem("ergotaxiako_app_v18")||localStorage.getItem("ergotaxiako_app_v17");
   if(!raw)return{projects:defaultProjects,settings:defaultSettings};
   const p=JSON.parse(raw);
   const loadedProjects=(p.projects?.length?p.projects:defaultProjects).map(pr=>({...pr,accounts:pr.accounts||[],schedule:pr.schedule||[],switchMaterials:pr.switchMaterials||[]}));
@@ -79,6 +79,42 @@ function toIsoDate(v){const m=String(v||"").match(/(\d{1,2})[\/.-](\d{1,2})[\/.-
 function parseByAliases(text,fields){const out={};for(const f of fields){for(const alias of f.ocrAliases||[]){const esc=alias.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");const pat=f.type==="date"?new RegExp(`${esc}[^0-9]{0,40}(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{4})`,"i"):f.type==="number"?new RegExp(`${esc}[^0-9]{0,40}([*]?\\d+[,.]?\\d*)`,"i"):new RegExp(`${esc}[^\\n\\r:]{0,25}[:\\s]*([^\\n\\r]{2,80})`,"i");const m=text.match(pat);if(m){out[f.key]=f.type==="date"?toIsoDate(m[1]):String(m[1]).replace(",",".").replace("*","").trim();break}}}return out}
 function parseGreekBillText(text,fields){const t=text||"";const out=parseByAliases(t,fields);if(/ΔΕΗ|DEI/i.test(t))out.provider="ΔΕΗ";if(/ΕΥΑΘ/i.test(t))out.provider="ΕΥΑΘ";const rf=t.match(/(RF[A-Z0-9]{10,})/i);if(rf)out.paymentCode=rf[1].toUpperCase();const amount=t.match(/([*]?\d+[,.]\d{2})\s*€/);if(amount&&!out.amount)out.amount=amount[1].replace(",",".").replace("*","");out.status=out.status||"Εκκρεμεί";return out}
 
+
+function getAllProjectBillEvents(projects){
+  return projects.flatMap(project =>
+    getBillEvents(project.accounts || []).map(event => ({
+      ...event,
+      projectId: project.id,
+      projectName: project.name
+    }))
+  ).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+
+function monthLabel(date){
+  return date.toLocaleDateString("el-GR", { month:"long", year:"numeric" });
+}
+
+function isoFromDate(date){
+  return date.toISOString().slice(0,10);
+}
+
+function getMonthDays(currentDate){
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const start = new Date(first);
+  const firstDay = (first.getDay() + 6) % 7;
+  start.setDate(first.getDate() - firstDay);
+  const days = [];
+  for(let i=0;i<42;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
 function App(){
  const init=loadState();
  const[projects,setProjects]=useState(init.projects);
@@ -91,25 +127,92 @@ function App(){
  const selected=projects.find(p=>p.id===view.projectId);
  function updateProject(id,patch){setProjects(projects.map(p=>p.id===id?{...p,...patch}:p))}
  function addProject(p){const n={...p,id:Date.now(),accounts:[],schedule:[],switchMaterials:[]};setProjects([n,...projects]);setShowNew(false);setView({type:"project",projectId:n.id,tab:"general"})}
+ if(view.type==="calendar")return <HomeCalendarPage projects={projects} onBack={()=>setView({type:"home"})} onOpenProject={(projectId)=>setView({type:"project",projectId,tab:"accounts"})}/>;
  if(view.type==="settings")return <SettingsPage settings={settings} setSettings={setSettings} route={view.section||"index"} onRoute={s=>setView({type:"settings",section:s})} onBack={()=>setView({type:"home"})}/>;
  if(view.type==="project"&&selected)return <ProjectPage project={selected} settings={settings} tab={view.tab||"general"} onBack={()=>setView({type:"home"})} onTab={tab=>setView({type:"project",projectId:selected.id,tab})} onUpdate={p=>updateProject(selected.id,p)} onDelete={()=>{setProjects(projects.filter(p=>p.id!==selected.id));setView({type:"home"})}}/>;
- return <HomePage projects={projects} settings={settings} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} onOpen={id=>setView({type:"project",projectId:id,tab:"general"})} onSettings={()=>setView({type:"settings",section:"index"})} showNew={showNew} setShowNew={setShowNew} onAdd={addProject}/>;
+ return <HomePage projects={projects} settings={settings} query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} onOpen={id=>setView({type:"project",projectId:id,tab:"general"})} onSettings={()=>setView({type:"settings",section:"index"})} onCalendar={()=>setView({type:"calendar"})} showNew={showNew} setShowNew={setShowNew} onAdd={addProject}/>;
 }
 
-function HomePage({projects,settings,query,setQuery,filter,setFilter,onOpen,onSettings,showNew,setShowNew,onAdd}){
+function HomePage({projects,settings,query,setQuery,filter,setFilter,onOpen,onSettings,onCalendar,showNew,setShowNew,onAdd}){
  const[menu,setMenu]=useState(false);
  const[form,setForm]=useState({name:"",address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""});
  const stats={total:projects.length,active:projects.filter(p=>p.status==="Σε εξέλιξη").length,urgent:projects.filter(p=>p.status==="Επείγον").length,waiting:projects.filter(p=>p.status==="Αναμονή").length};
  const filtered=projects.filter(p=>(filter==="all"||p.status===filter)&&`${p.name} ${p.address} ${p.stage}`.toLowerCase().includes(query.toLowerCase()));
  function submit(){if(!form.name.trim())return;onAdd({...form,deliveryDate:form.deliveryDate||"Δεν ορίστηκε"});setForm({name:"",address:"",stage:settings.stages[0]||"",deliveryDate:"",status:"Σε εξέλιξη",notes:"",specs:""})}
  return <div className="app-shell"><header className="topbar"><div><p className="eyebrow">Εργοταξιακό App</p><h1>Έργα</h1><p className="subtitle">Dashboard έργων με modules ανά έργο.</p></div><div className="header-actions"><button className="secondary-btn" onClick={onSettings}><Settings size={18}/> Διαχείριση</button><div className="more-wrap"><button className="icon-btn" onClick={()=>setMenu(!menu)}><MoreVertical size={20}/></button>{menu&&<div className="more-menu"><button onClick={()=>{setShowNew(true);setMenu(false)}}><Plus size={16}/> Προσθήκη έργου</button><button onClick={onSettings}><Settings size={16}/> Διαχείριση</button></div>}</div></div></header>
- <nav className="taskbar">{["all","Σε εξέλιξη","Επείγον","Αναμονή"].map(x=><button key={x} className={filter===x?"active":""} onClick={()=>setFilter(x)}>{x==="all"?"Όλα":x}</button>)}</nav>
+ <nav className="taskbar">{["all","Σε εξέλιξη","Επείγον","Αναμονή"].map(x=><button key={x} className={filter===x?"active":""} onClick={()=>setFilter(x)}>{x==="all"?"Όλα":x}</button>)}<button onClick={onCalendar}>Ημερολόγιο</button></nav>
  <section className="stats-grid"><Stat label="Σε εξέλιξη" value={stats.active}/><Stat label="Επείγοντα" value={stats.urgent}/><Stat label="Σε αναμονή" value={stats.waiting}/><Stat label="Όλα τα έργα" value={stats.total}/></section>
  <div className="search-box"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Αναζήτηση έργου..."/></div>
  {showNew&&<section className="detail-card new-project-panel"><div className="panel-head"><h2><Plus size={20}/> Προσθήκη έργου</h2><button className="secondary-btn" onClick={()=>setShowNew(false)}>Κλείσιμο</button></div><div className="two-col"><Field label="Όνομα έργου" value={form.name} onChange={v=>setForm({...form,name:v})}/><Field label="Διεύθυνση" value={form.address} onChange={v=>setForm({...form,address:v})}/><Select label="Στάδιο" value={form.stage} options={settings.stages} onChange={v=>setForm({...form,stage:v})}/><Field label="Ημερομηνία παράδοσης" type="date" value={form.deliveryDate} onChange={v=>setForm({...form,deliveryDate:v})}/><Select label="Κατάσταση" value={form.status} options={settings.statuses} onChange={v=>setForm({...form,status:v})}/></div><button className="primary-btn" onClick={submit}>Αποθήκευση έργου</button></section>}
  <div className="project-grid">{filtered.map(p=><button className="project-card" key={p.id} onClick={()=>onOpen(p.id)}><div className="card-head"><div><h3>{p.name}</h3><p>{p.stage}</p></div><Building2 size={22}/></div><div className="mini-info"><MapPin size={15}/> {p.address||"Χωρίς διεύθυνση"}</div><div className="mini-info"><CalendarDays size={15}/> Παράδοση: {p.deliveryDate}</div>{p.switchMaterials?.length>0&&<div className="mini-info"><Plug size={15}/> Διακοπτικό: {p.switchMaterials.length} είδη</div>}<span className="status blue">{p.status}</span></button>)}</div></div>
 }
 function Stat({label,value}){return <button className="stat-card"><p>{label}</p><strong>{value}</strong></button>}
+
+
+function HomeCalendarPage({projects,onBack,onOpenProject}){
+ const[currentMonth,setCurrentMonth]=useState(new Date());
+ const[selectedDate,setSelectedDate]=useState(isoFromDate(new Date()));
+ const[provider,setProvider]=useState("Όλοι");
+ const events=getAllProjectBillEvents(projects);
+ const providers=["Όλοι",...Array.from(new Set(events.map(e=>e.provider))).sort((a,b)=>a.localeCompare(b,"el"))];
+ const visibleEvents=provider==="Όλοι"?events:events.filter(e=>e.provider===provider);
+ const days=getMonthDays(currentMonth);
+ const eventsByDate=visibleEvents.reduce((acc,e)=>{(acc[e.date]||(acc[e.date]=[])).push(e);return acc},{});
+ const selectedEvents=eventsByDate[selectedDate]||[];
+ const upcoming=visibleEvents.filter(e=>e.days!==null&&e.days>=0).slice(0,8);
+ function prevMonth(){setCurrentMonth(new Date(currentMonth.getFullYear(),currentMonth.getMonth()-1,1))}
+ function nextMonth(){setCurrentMonth(new Date(currentMonth.getFullYear(),currentMonth.getMonth()+1,1))}
+ return <div className="app-shell">
+   <header className="topbar">
+     <div><p className="eyebrow">Αρχική σελίδα</p><h1>Ημερολόγιο</h1><p className="subtitle">Υπενθυμίσεις λογαριασμών από όλα τα έργα: λήξεις πληρωμής και αναμενόμενες εκδόσεις.</p></div>
+     <button className="secondary-btn" onClick={onBack}><ArrowLeft size={18}/> Πίσω στα έργα</button>
+   </header>
+   <section className="home-calendar-layout">
+    <div className="home-calendar-card">
+      <div className="home-calendar-toolbar">
+        <button onClick={prevMonth}>‹</button>
+        <strong>{monthLabel(currentMonth)}</strong>
+        <button onClick={nextMonth}>›</button>
+        <select value={provider} onChange={e=>setProvider(e.target.value)}>{providers.map(p=><option key={p}>{p}</option>)}</select>
+      </div>
+      <div className="calendar-weekdays">{["Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ","Κυρ"].map(d=><span key={d}>{d}</span>)}</div>
+      <div className="month-grid">
+        {days.map(day=>{
+          const iso=isoFromDate(day);
+          const list=eventsByDate[iso]||[];
+          const isOther=day.getMonth()!==currentMonth.getMonth();
+          const isSelected=iso===selectedDate;
+          return <button key={iso} className={`month-day ${isOther?"other":""} ${isSelected?"selected":""}`} onClick={()=>setSelectedDate(iso)}>
+            <span className="day-number">{day.getDate()}</span>
+            <div className="day-events">
+              {list.slice(0,3).map(ev=><span key={ev.id} className={`day-pill ${ev.type}`}>{ev.type==="due"?"Λήξη":"Έκδοση"} {ev.provider}</span>)}
+              {list.length>3&&<span className="day-more">+{list.length-3}</span>}
+            </div>
+          </button>
+        })}
+      </div>
+    </div>
+    <aside className="calendar-side-panel">
+      <div className="calendar-side-card">
+        <h2>{formatGreekDate(selectedDate)}</h2>
+        {selectedEvents.length===0?<p className="muted">Δεν υπάρχουν υπενθυμίσεις για αυτή την ημέρα.</p>:selectedEvents.map(ev=><button className={`calendar-detail-event ${ev.type}`} key={ev.id} onClick={()=>onOpenProject(ev.projectId)}>
+          <strong>{ev.title}</strong>
+          <span>{ev.projectName}</span>
+          <small>{ev.subtitle} · {ev.days===0?"σήμερα":ev.days>0?`σε ${ev.days}ημ.`:`${Math.abs(ev.days)}ημ. πριν`}</small>
+        </button>)}
+      </div>
+      <div className="calendar-side-card">
+        <h2>Προσεχείς υπενθυμίσεις</h2>
+        {upcoming.length===0?<p className="muted">Δεν υπάρχουν προσεχείς υπενθυμίσεις.</p>:upcoming.map(ev=><button className={`calendar-detail-event ${ev.type}`} key={ev.id} onClick={()=>{setSelectedDate(ev.date);onOpenProject(ev.projectId)}}>
+          <strong>{formatGreekDate(ev.date)} · {ev.title}</strong>
+          <span>{ev.projectName}</span>
+          <small>{ev.subtitle}</small>
+        </button>)}
+      </div>
+    </aside>
+   </section>
+ </div>
+}
 
 function ProjectPage({project,settings,tab,onBack,onTab,onUpdate,onDelete}){
  const tabs=[["general","Γενικά",FileText],["accounts","Λογαριασμοί",Banknote],["switchMaterials","Διακοπτικό Υλικό",Plug],["schedule","Χρονοδιάγραμμα",GanttChartSquare],["stages","Στάδια εργασιών",Layers],["materials","Υλικά",Package]];

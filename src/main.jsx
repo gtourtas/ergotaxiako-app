@@ -9,7 +9,7 @@ import versionInfo from "./version.json";
 import "./style.css";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-const STORAGE_KEY="ergotaxiako_app_v36";
+const STORAGE_KEY="ergotaxiako_app_v36_1";
 
 const stages=["Αποξηλώσεις","Ηλεκτρολόγος","Υδραυλικός","Γκρο μπετά","Πλακάκια μπάνιου","Κουζίνα","Διακόπτες","Φωτιστικά","Τελικό βάψιμο","Παράδοση έργου"];
 const switchCats=["Πρίζες","Διακόπτες","DATA / TV","Πλαίσια","Πλακίδια","Ειδικά"];
